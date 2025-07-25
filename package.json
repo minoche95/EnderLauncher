@@ -1,7 +1,7 @@
 {
-    "name": "Ender-Launcher",
+    "name": ".EnderLauncher",
     "preductname": "Ender Launcher",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Launcher Mincraft pour le serveur EnderCraft",
     "main": "src/app.js",
     "author": {
