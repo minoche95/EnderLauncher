@@ -1,7 +1,7 @@
 {
     "name": "Ender-Launcher",
     "preductname": "Ender Launcher",
-    "version": "2.1.3",
+    "version": "v0",
     "description": "Launcher Mincraft pour le serveur EnderCraft",
     "main": "src/app.js",
     "author": {
@@ -9,7 +9,7 @@
         "email": "contact@luuxis.fr",
         "url": "https://github.com/luuxis"
     },
-    "url": "http://launcher.luuxis.fr",
+    "url": "https://enderhost.fr/launcher",
     "scripts": {
         "start": "cross-env-shell NODE_ENV=dev electron .",
         "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",

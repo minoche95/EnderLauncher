@@ -451,7 +451,7 @@ ___
 
 - Ouvrez Github Desktop
 
-- Dans la liste à goauche (voir screenshot ci-dessous) vous pouvez voir les fichiers modifiés. Pour envoyer les fichiers sur github entrez une dectiption pour la mise a jour dans le champ souligné puis cliquez sur "Commit to main"
+- Dans la liste à gauche (voir screenshot ci-dessous) vous pouvez voir les fichiers modifiés. Pour envoyer les fichiers sur github entrez une dectiption pour la mise a jour dans le champ souligné puis cliquez sur "Commit to main"
 
 ![Sélectionner le profile par défault](./images/push.png)
 
