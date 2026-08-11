@@ -4,7 +4,7 @@ Le launcher ne sait rien du pack : il demande tout à un service HTTP. Ce dossie
 l'installe.
 
 ```bash
-./install.sh --url https://index.enderhost.fr
+./install.sh --url https://index.enderhost.info
 ```
 
 Un conteneur `nginx:alpine` sur son propre port, **indépendant de Crafty** :
