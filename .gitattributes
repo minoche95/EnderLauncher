@@ -1,0 +1,5 @@
+# Les scripts partent sur un serveur Linux : un CRLF y rendrait le shebang
+# invalide (« bad interpreter »).
+*.sh text eol=lf
+*.yml text eol=lf
+*.conf text eol=lf
