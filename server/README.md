@@ -4,11 +4,32 @@ Le launcher ne sait rien du pack : il demande tout à un service HTTP. Ce dossie
 l'installe.
 
 ```bash
-./install.sh --url https://index.enderhost.info
+curl -fsSL https://raw.githubusercontent.com/minoche95/EnderLauncher/master/server/install.sh -o install.sh
+bash install.sh --url https://index.enderhost.info
 ```
 
-Un conteneur `nginx:alpine` sur son propre port, **indépendant de Crafty** :
-aucun volume ni réseau partagé, rien à changer dans ta stack de jeu.
+Un conteneur `nginx:alpine`, **indépendant de Crafty** : aucun volume ni réseau
+partagé, rien à changer dans ta stack de jeu.
+
+Il écoute sur `127.0.0.1:8087` seulement — c'est le tunnel `cloudflared` qui
+publie le service. **Aucun port à ouvrir dans le pare-feu.** `--public` lève
+cette restriction si tu sers sans tunnel.
+
+## Le tunnel
+
+Le service n'est joignable de l'extérieur que par un tunnel. Dans
+**Zero Trust → Networks → Tunnels**, sur un tunnel qui tourne *sur cette
+machine*, ajoute un public hostname :
+
+| | |
+|---|---|
+| Subdomain | `index` |
+| Domain | `enderhost.info` |
+| Service | `HTTP` → `localhost:8087` |
+
+Cloudflare crée l'enregistrement DNS lui-même. Si aucun tunnel ne tourne encore
+sur le serveur de jeu, il faut en créer un — un tunnel est lié à la machine où
+`cloudflared` s'exécute, on ne peut pas réutiliser celui d'un autre PC.
 
 ## Ce que le launcher demande
 

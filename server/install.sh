@@ -6,6 +6,7 @@
 #   ./install.sh                          installe dans ./enderindex
 #   ./install.sh --dir /srv/enderindex    installe ailleurs
 #   ./install.sh --port 8080              port d'écoute (défaut 8087)
+#   ./install.sh --public                 exposer sur toutes les interfaces
 #   ./install.sh --url https://index...   URL publique, écrite dans les manifestes
 #
 # Conçu pour cohabiter avec Crafty : c'est un conteneur nginx indépendant, sur
@@ -19,6 +20,7 @@ TARGET="$PWD/enderindex"
 PORT=8087
 PUBLIC_URL=""
 INSTANCE="EnderCraft"
+BIND="127.0.0.1:"   # derrière un tunnel, rien n'a besoin d'être exposé
 
 die()  { printf '\n\033[31mErreur :\033[0m %s\n' "$*" >&2; exit 1; }
 step() { printf '\n\033[36m==>\033[0m \033[1m%s\033[0m\n' "$*"; }
@@ -30,6 +32,7 @@ while [ $# -gt 0 ]; do
         --port)     PORT="${2:?--port attend un numéro}"; shift 2 ;;
         --url)      PUBLIC_URL="${2:?--url attend une URL}"; shift 2 ;;
         --instance) INSTANCE="${2:?--instance attend un nom}"; shift 2 ;;
+        --public)   BIND=""; shift ;;
         -h|--help)  sed -n '2,15p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *)          die "option inconnue : $1" ;;
     esac
@@ -76,7 +79,10 @@ services:
     container_name: enderindex
     restart: unless-stopped
     ports:
-      - "$PORT:80"
+      # Par défaut lié à la boucle locale : c'est le tunnel cloudflared qui
+      # publie le service. Rien à ouvrir dans le pare-feu, rien à exposer.
+      # --public retire cette restriction si vous servez sans tunnel.
+      - "$BIND$PORT:80"
     volumes:
       - ./www:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
