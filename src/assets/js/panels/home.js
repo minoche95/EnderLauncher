@@ -20,20 +20,21 @@ class Home {
 
     async news() {
         let newsElement = document.querySelector('.news-list');
-        let news = await config.getNews().then(res => res).catch(err => false);
+        let news = await config.getNews(this.config).then(res => res).catch(err => false);
         if (news) {
             if (!news.length) {
                 let blockNews = document.createElement('div');
+                const date = this.getdate(new Date())
                 blockNews.classList.add('news-block');
                 blockNews.innerHTML = `
                     <div class="news-header">
-                        <img class="server-status-icon" src="assets/images/icon.png">
+                        <img class="server-status-icon" src="assets/images/icon/icon.png">
                         <div class="header-text">
                             <div class="title">Aucun news n'ai actuellement disponible.</div>
                         </div>
                         <div class="date">
-                            <div class="day">1</div>
-                            <div class="month">Janvier</div>
+                            <div class="day">${date.day}</div>
+                            <div class="month">${date.month}</div>
                         </div>
                     </div>
                     <div class="news-content">
@@ -49,7 +50,7 @@ class Home {
                     blockNews.classList.add('news-block');
                     blockNews.innerHTML = `
                         <div class="news-header">
-                            <img class="server-status-icon" src="assets/images/icon.png">
+                            <img class="server-status-icon" src="assets/images/icon/icon.png">
                             <div class="header-text">
                                 <div class="title">${News.title}</div>
                             </div>
@@ -69,16 +70,17 @@ class Home {
             }
         } else {
             let blockNews = document.createElement('div');
+            const date = this.getdate(new Date())
             blockNews.classList.add('news-block');
             blockNews.innerHTML = `
                 <div class="news-header">
-                        <img class="server-status-icon" src="assets/images/icon.png">
+                        <img class="server-status-icon" src="assets/images/icon/icon.png">
                         <div class="header-text">
                             <div class="title">Error.</div>
                         </div>
                         <div class="date">
-                            <div class="day">1</div>
-                            <div class="month">Janvier</div>
+                            <div class="day">${date.day}</div>
+                            <div class="month">${date.month}</div>
                         </div>
                     </div>
                     <div class="news-content">
@@ -104,7 +106,7 @@ class Home {
         let configClient = await this.db.readData('configClient')
         let auth = await this.db.readData('accounts', configClient.account_selected)
         let instancesList = await config.getInstanceList()
-        let instanceSelect = instancesList.find(i => i.name == configClient?.instance_selct) ? configClient?.instance_selct : null
+        let instanceSelect = instancesList.find(i => i.name == configClient?.instance_select) ? configClient?.instance_select : null
 
         let instanceBTN = document.querySelector('.play-instance')
         let instancePopup = document.querySelector('.instance-popup')
@@ -119,7 +121,7 @@ class Home {
         if (!instanceSelect) {
             let newInstanceSelect = instancesList.find(i => i.whitelistActive == false)
             let configClient = await this.db.readData('configClient')
-            configClient.instance_selct = newInstanceSelect.name
+            configClient.instance_select = newInstanceSelect.name
             instanceSelect = newInstanceSelect.name
             await this.db.updateData('configClient', configClient)
         }
@@ -131,7 +133,7 @@ class Home {
                     if (instance.name == instanceSelect) {
                         let newInstanceSelect = instancesList.find(i => i.whitelistActive == false)
                         let configClient = await this.db.readData('configClient')
-                        configClient.instance_selct = newInstanceSelect.name
+                        configClient.instance_select = newInstanceSelect.name
                         instanceSelect = newInstanceSelect.name
                         setStatus(newInstanceSelect.status)
                         await this.db.updateData('configClient', configClient)
@@ -151,19 +153,19 @@ class Home {
                 if (activeInstanceSelect) activeInstanceSelect.classList.toggle('active-instance');
                 e.target.classList.add('active-instance');
 
-                configClient.instance_selct = newInstanceSelect
+                configClient.instance_select = newInstanceSelect
                 await this.db.updateData('configClient', configClient)
                 instanceSelect = instancesList.filter(i => i.name == newInstanceSelect)
                 instancePopup.style.display = 'none'
                 let instance = await config.getInstanceList()
-                let options = instance.find(i => i.name == configClient.instance_selct)
+                let options = instance.find(i => i.name == configClient.instance_select)
                 await setStatus(options.status)
             }
         })
 
         instanceBTN.addEventListener('click', async e => {
             let configClient = await this.db.readData('configClient')
-            let instanceSelect = configClient.instance_selct
+            let instanceSelect = configClient.instance_select
             let auth = await this.db.readData('accounts', configClient.account_selected)
 
             if (e.target.classList.contains('instance-select')) {
@@ -202,7 +204,7 @@ class Home {
         let configClient = await this.db.readData('configClient')
         let instance = await config.getInstanceList()
         let authenticator = await this.db.readData('accounts', configClient.account_selected)
-        let options = instance.find(i => i.name == configClient.instance_selct)
+        let options = instance.find(i => i.name == configClient.instance_select)
 
         let playInstanceBTN = document.querySelector('.play-instance')
         let infoStartingBOX = document.querySelector('.info-starting-game')
@@ -215,15 +217,15 @@ class Home {
             timeout: 10000,
             path: `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}`,
             instance: options.name,
-            version: options.loadder.minecraft_version,
+            version: options.loader.minecraft_version,
             detached: configClient.launcher_config.closeLauncher == "close-all" ? false : true,
             downloadFileMultiple: configClient.launcher_config.download_multi,
             intelEnabledMac: configClient.launcher_config.intelEnabledMac,
 
             loader: {
-                type: options.loadder.loadder_type,
-                build: options.loadder.loadder_version,
-                enable: options.loadder.loadder_type == 'none' ? false : true
+                type: options.loader.loader_type,
+                build: options.loader.loader_version,
+                enable: options.loader.loader_type == 'none' ? false : true
             },
 
             verify: options.verify,

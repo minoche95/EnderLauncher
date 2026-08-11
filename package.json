@@ -1,8 +1,8 @@
 {
     "name": "EnderLauncher",
     "preductname": "Ender Launcher",
-    "version": "3.0.0",
-    "description": "Launcher Mincraft pour le serveur EnderCraft",
+    "version": "3.1.0",
+    "description": "Launcher Minecraft pour le serveur EnderCraft",
     "main": "src/app.js",
     "author": {
         "name": "luuxis, Inc.",
@@ -14,7 +14,7 @@
         "start": "cross-env-shell NODE_ENV=dev electron .",
         "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",
         "build": "node build.js --obf=true --build=platform",
-        "icon": "node build.js --icon=https://github.com/minoche95/EnderLauncher/blob/master/src/assets/images/icon.png"
+        "icon": "node build.js --icon"
     },
     "license": "CCANC",
     "nodemonConfig": {
@@ -22,19 +22,19 @@
         "ignore": "**/test"
     },
     "dependencies": {
-        "electron-updater": "^6.1.8",
-        "minecraft-java-core": "^4.1.4",
-        "node-bdd": "^2.0.4",
+        "electron-store": "^8.2.0",
+        "electron-updater": "^6.7.3",
+        "minecraft-java-core": "^4.2.5",
         "node-fetch": "^2.7.0",
         "xml-js": "^1.6.11"
     },
     "devDependencies": {
-        "cross-env": "^7.0.3",
-        "electron": "^30.5.1",
+        "cross-env": "^10.1.0",
+        "electron": "^40.0.0",
         "electron-builder": "^26.0.12",
-        "javascript-obfuscator": "^4.1.0",
-        "jimp": "^0.22.12",
-        "nodemon": "^3.1.2",
+        "javascript-obfuscator": "^5.1.0",
+        "jimp": "^1.6.0",
+        "nodemon": "^3.1.11",
         "png2icons": "^2.0.1"
     },
     "repository": {

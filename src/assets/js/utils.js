@@ -103,8 +103,8 @@ async function setStatus(opt) {
     if (!statusServer.error) {
         statusServerElement.classList.remove('red')
         document.querySelector('.status-player-count').classList.remove('red')
-        statusServerElement.innerHTML = `En ligne - ${statusServer.ms} ms`
-        playersOnline.innerHTML = statusServer.playersConnect
+        statusServerElement.innerHTML = `En ligne - ${statusServer.ms ? statusServer.ms : 0} ms`
+        playersOnline.innerHTML = statusServer.playersConnect ? statusServer.playersConnect : '0'
     } else {
         statusServerElement.classList.add('red')
         statusServerElement.innerHTML = `Ferme - 0 ms`
