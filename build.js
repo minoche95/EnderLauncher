@@ -144,6 +144,11 @@ class Index {
             console.log('le build est terminé')
         }).catch(err => {
             console.error('Error during build!', err)
+            // Sans ce code de sortie, un build rate ressort « success » dans le
+            // CI : la release part amputee d'une plateforme entiere, tous
+            // voyants au vert. C'est exactement ce qui a produit une 3.2.3 sans
+            // aucun binaire Windows.
+            process.exitCode = 1
         })
     }
 
