@@ -96,7 +96,15 @@ class Index {
                 nsis: {
                     oneClick: true,
                     allowToChangeInstallationDirectory: false,
-                    createDesktopShortcut: true,
+                    // `true` ne cree le raccourci qu'a la PREMIERE installation :
+                    // les mises a jour, jouees par l'updater en mode silencieux,
+                    // sautent l'etape pour ne pas ressusciter un raccourci que
+                    // l'utilisateur aurait supprime. Resultat, un poste passe de
+                    // version en version n'en voit jamais apparaitre.
+                    // `"always"` le (re)cree a chaque installation.
+                    createDesktopShortcut: "always",
+                    createStartMenuShortcut: true,
+                    shortcutName: "Ender Launcher",
                     runAfterFinish: true
                 },
                 mac: {
