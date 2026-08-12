@@ -155,17 +155,29 @@ done
 # Motifs, commentaires et lignes vides retires.
 mapfile -t PATTERNS < <(grep -vE '^\s*(#|$)' exclude.txt || true)
 
-# Un motif finissant par / ecarte tout un sous-arbre ; sinon il est confronte au
-# chemin complet ET au seul nom de fichier, ce qui rend `*.log` naturel.
+# Convention .gitignore :
+#
+#   /assets/     slash INITIAL -> ancre a la racine. Ecarte le dossier assets/
+#                du haut, gere par le launcher, mais laisse passer un
+#                kubejs/assets/ ou un resourcepacks/x/assets/ legitimes.
+#   .mixin.out/  sans slash initial -> ce dossier a n'importe quel niveau.
+#   *.log        motif simple -> confronte au nom de fichier, a tout niveau.
 excluded() {
-    local rel="$1" pat
+    local rel="$1" pat bare
     for pat in "${PATTERNS[@]}"; do
         case "$pat" in
-            */) [ "${rel}/" = "$pat" ] && return 0
+            /*/)                                   # dossier ancre a la racine
+                bare="${pat#/}"
+                case "$rel/" in "$bare"*) return 0 ;; esac ;;
+            /*)                                    # fichier ancre a la racine
+                case "$rel" in ${pat#/}) return 0 ;; esac ;;
+            */)                                    # dossier, a tout niveau
+                bare="${pat%/}"
                 case "$rel/" in "$pat"*) return 0 ;; esac
-                case "$rel" in *"/${pat%/}/"*) return 0 ;; esac ;;
-            *)  case "$rel" in $pat) return 0 ;; esac
-                case "${rel##*/}" in $pat) return 0 ;; esac ;;
+                case "$rel" in *"/$bare/"*) return 0 ;; esac ;;
+            *)                                     # nom de fichier, tout niveau
+                case "${rel##*/}" in $pat) return 0 ;; esac
+                case "$rel" in $pat) return 0 ;; esac ;;
         esac
     done
     return 1
@@ -180,8 +192,12 @@ done < <(find "$SRC" -type f | sort)
 
 if [ "$DRY" -eq 1 ]; then
     echo "$kept fichiers seraient publies, $skipped ecartes."
-    echo "--- ecartes ---"
-    while IFS= read -r f; do rel="${f#"$SRC"/}"; excluded "$rel" && echo "  $rel"; done         < <(find "$SRC" -type f | sort) | head -40
+    echo
+    echo "--- publie, par dossier de premier niveau ---"
+    sed 's|/.*||' "$LIST" | sort | uniq -c | sort -rn | sed 's/^/  /'
+    echo
+    echo "--- ecarte, par dossier de premier niveau ---"
+    while IFS= read -r f; do rel="${f#"$SRC"/}"; excluded "$rel" && echo "$rel"; done         < <(find "$SRC" -type f) | sed 's|/.*||' | sort | uniq -c | sort -rn | sed 's/^/  /'
     exit 0
 fi
 
@@ -217,37 +233,46 @@ if [ -f "$TARGET/exclude.txt" ]; then
     note "exclude.txt existant, conservé"
 else
 cat > "$TARGET/exclude.txt" <<'EXCLUDE'
-# Ce que l'index ne publie JAMAIS. Syntaxe rsync : un motif par ligne.
+# Ce que l'index ne publie JAMAIS. Convention .gitignore :
+#   /nom/   ancre a la racine        nom/   ce dossier a tout niveau
+#   *.ext   nom de fichier, partout
 # Vous pouvez donc deposer une instance Prism entiere dans pack/ sans trier.
 
 # Propre au joueur, ou sans valeur pour lui
-saves/
-logs/
-crash-reports/
-screenshots/
-backups/
-usercache.json
-usernamecache.json
-realms_persistence.json
-servers.dat*
+/saves/
+/logs/
+/crash-reports/
+/screenshots/
+/backups/
+/usercache.json
+/usernamecache.json
+/realms_persistence.json
+/servers.dat
+/servers.dat_old
 .fabric/
 .mixin.out/
 
-# Gere par le launcher lui-meme, jamais a distribuer
-versions/
-libraries/
-assets/
-natives/
-runtime/
-downloads/
+# Gere par le launcher lui-meme, jamais a distribuer.
+# Ancres : un kubejs/assets/ ou un resourcepacks/x/assets/ sont du contenu.
+/versions/
+/libraries/
+/assets/
+/natives/
+/runtime/
+/downloads/
+
+# Caches regeneres au lancement
+/dynamic-resource-pack-cache/
+/dynamic-data-pack-cache/
+.cache/
 
 # Metadonnees de Prism et outils de distribution
-mods/.index/
+/mods/.index/
+/instance.cfg
+/mmc-pack.json
 fetch-extras.*
 LISEZ-MOI.txt
 *.md
-instance.cfg
-mmc-pack.json
 
 # Journaux et fichiers temporaires
 *.log
