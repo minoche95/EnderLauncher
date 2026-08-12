@@ -168,8 +168,8 @@ def health() -> dict:
     import urllib.request
     nginx = False
     for url in (os.environ.get("NGINX_URL"),
-                "http://enderindex/config",
-                f"http://127.0.0.1:{port}/config"):
+                f"http://127.0.0.1:{port}/config",
+                "http://enderindex/config"):
         if not url:
             continue
         try:

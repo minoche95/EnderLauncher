@@ -106,31 +106,6 @@ services:
       - ./logs:/var/log/nginx
 COMPOSE
 
-if [ "$PANEL" -eq 1 ]; then
-cat >> "$TARGET/docker-compose.yml" <<PANELSVC
-
-  # Panneau de gestion. Publie sur la boucle locale de l'HOTE uniquement : il
-  # decide de ce que tous les joueurs telechargent. On y accede par tunnel SSH.
-  # Image slim et non alpine : update.sh a besoin de bash, sha1sum et find.
-  panel:
-    image: python:3.12-slim
-    container_name: enderindex-panel
-    restart: unless-stopped
-    working_dir: /srv
-    command: python3 /srv/panel.py
-    environment:
-      ENDERINDEX_ROOT: /srv
-      PANEL_PORT: "$PANEL_PORT"
-      PANEL_BIND: "0.0.0.0"
-      # Nom du service, pas 127.0.0.1 : dans le conteneur du panneau, la boucle
-      # locale est la sienne et nginx y est injoignable.
-      NGINX_URL: "http://enderindex/config"
-    ports:
-      - "127.0.0.1:$PANEL_PORT:$PANEL_PORT"
-    volumes:
-      - ./:/srv
-PANELSVC
-fi
 
 cat > "$TARGET/nginx.conf" <<'NGINX'
 server {
@@ -167,6 +142,40 @@ if [ "$PANEL" -eq 1 ]; then
         curl -fsSL "$RAW/$REF/server/$f" -o "$TARGET/$f"             || die "téléchargement de $f impossible (ref $REF)"
     done
     note "panneau récupéré ($REF)"
+
+    # Service utilisateur, pas conteneur : le panneau lance update.sh, qui doit
+    # ecrire dans pack/ et www/ avec VOTRE compte. En conteneur il tournait en
+    # root et vous laissait des fichiers intouchables. Il a besoin de bash,
+    # sha1sum et find — deja presents, l'isolation n'apportait rien.
+    command -v python3 >/dev/null || die "python3 est requis pour le panneau."
+    UNIT="$HOME/.config/systemd/user/enderindex-panel.service"
+    mkdir -p "$(dirname "$UNIT")"
+    cat > "$UNIT" <<UNITFILE
+[Unit]
+Description=Panneau de gestion de l'index EnderCraft
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$TARGET
+Environment=ENDERINDEX_ROOT=$TARGET
+Environment=PANEL_PORT=$PANEL_PORT
+Environment=PANEL_BIND=127.0.0.1
+ExecStart=$(command -v python3) $TARGET/panel.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+UNITFILE
+
+    if systemctl --user daemon-reload 2>/dev/null; then
+        systemctl --user enable --now enderindex-panel.service >/dev/null 2>&1             && note "service enderindex-panel démarré"             || note "service écrit, à démarrer : systemctl --user start enderindex-panel"
+        # Sans lingering, le service meurt a la deconnexion SSH.
+        loginctl enable-linger "$USER" >/dev/null 2>&1             && note "lingering activé — le panneau survit à la déconnexion"             || note "lingering refusé : sudo loginctl enable-linger $USER"
+    else
+        note "systemd utilisateur indisponible — lancez : python3 $TARGET/panel.py"
+    fi
 fi
 
 # ─── Scripts de gestion ──────────────────────────────────────────────────────

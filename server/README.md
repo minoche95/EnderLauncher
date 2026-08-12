@@ -58,6 +58,18 @@ ssh -L 8088:127.0.0.1:8088 minoche@serveur
 
 puis `http://localhost:8088`.
 
+C'est un **service systemd utilisateur**, pas un conteneur. Volontairement : le
+panneau lance `update.sh`, qui doit écrire dans `pack/` et `www/` avec votre
+compte. En conteneur il tournait en root et laissait derrière lui des fichiers
+que vous ne pouviez plus modifier. Et comme il a besoin de `bash`, `sha1sum` et
+`find`, déjà présents sur la machine, l'isolation n'apportait rien.
+
+```bash
+systemctl --user status enderindex-panel     # état
+systemctl --user restart enderindex-panel    # après mise à jour de panel.py
+journalctl --user -u enderindex-panel -n 50  # journal
+```
+
 | | |
 |---|---|
 | **État** | nginx en ligne, date de la dernière publication, nombre de fichiers, espace disque |
