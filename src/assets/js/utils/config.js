@@ -11,16 +11,67 @@ let url = pkg.user ? `${pkg.url}/${pkg.user}` : pkg.url
 let config = `${url}/config`;
 let articles = `${url}/articles`;
 
+// Traduction des codes systeme de node-fetch. Sans elle, le joueur lirait
+// « ENOTFOUND », qui ne lui apprend rien.
+const NETWORK_REASONS = {
+    ENOTFOUND: 'nom de domaine introuvable',
+    EAI_AGAIN: 'résolution DNS impossible',
+    ECONNREFUSED: 'connexion refusée',
+    ECONNRESET: 'connexion interrompue',
+    ETIMEDOUT: 'délai dépassé',
+    EHOSTUNREACH: 'hôte injoignable',
+    ENETUNREACH: 'réseau injoignable',
+    CERT_HAS_EXPIRED: 'certificat expiré',
+};
+
 class Config {
     GetConfig() {
         return new Promise((resolve, reject) => {
             nodeFetch(config).then(async config => {
                 if (config.status === 200) return resolve(config.json());
-                else return reject({ error: { code: config.statusText, message: 'server not accessible' } });
+                // `code` reste le statusText : launcher.js s'en sert comme titre
+                // de popup. On ajoute le statut numerique, seul vraiment parlant
+                // quand il s'agit de dire d'ou vient la panne.
+                else return reject({
+                    error: {
+                        code: config.statusText,
+                        status: config.status,
+                        message: 'server not accessible'
+                    }
+                });
             }).catch(error => {
                 return reject({ error });
             })
         })
+    }
+
+    /** L'adresse reellement interrogee, utile a afficher en cas d'echec. */
+    get indexUrl() {
+        return url;
+    }
+
+    /**
+     * Traduit un rejet de GetConfig en phrase exploitable.
+     *
+     * Deux familles d'echec, a ne surtout pas confondre : le serveur a repondu
+     * autre chose que 200 — la panne est alors chez nous — ou la requete n'est
+     * jamais arrivee. Le launcher annoncait « aucune connexion internet » dans
+     * les deux cas, ce qui envoyait chercher la panne du mauvais cote.
+     */
+    describeError(err) {
+        const e = (err && err.error) || err || {};
+
+        if (e.status) {
+            const gateway = [502, 503, 504].includes(e.status);
+            const quoi = gateway
+                ? "le serveur d'index ne répond plus"
+                : "réponse inattendue du serveur d'index";
+            return `${quoi} (${e.status}${e.code ? ' ' + e.code : ''})`;
+        }
+
+        const known = NETWORK_REASONS[e.code];
+        return "serveur d'index injoignable — "
+            + (known ? `${known} (${e.code})` : (e.message || 'cause inconnue'));
     }
 
     async getInstanceList() {

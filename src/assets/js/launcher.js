@@ -51,9 +51,12 @@ class Launcher {
 
 
     errorConnect() {
+        // Le titre valait `statusText` et le contenu « server not accessible » :
+        // exact, mais illisible. Meme information, en clair, avec l'adresse
+        // interrogee — c'est elle qu'on veut voir quand on cherche la panne.
         new popup().openPopup({
-            title: this.config.error.code,
-            content: this.config.error.message,
+            title: 'Connexion impossible',
+            content: `${config.describeError(this.config)}.<br><br>${config.indexUrl}`,
             color: 'red',
             exit: true,
             options: true

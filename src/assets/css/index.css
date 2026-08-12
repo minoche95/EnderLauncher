@@ -100,6 +100,16 @@ body::before {
     transition: opacity 400ms ease;
 }
 
+/* L'adresse interrogee, sous le message d'echec : discrete, mais c'est elle
+   qu'on veut lire quand on cherche d'ou vient la panne. */
+.message .detail {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: var(--color-faint);
+    word-break: break-all;
+}
+
 /* Lien de telechargement propose quand la mise a jour ne peut pas etre
    appliquee automatiquement (macOS et Linux). */
 .download-update {

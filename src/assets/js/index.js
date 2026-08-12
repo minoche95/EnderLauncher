@@ -119,7 +119,11 @@ class Splash {
             this.startLauncher();
         }).catch(e => {
             console.error(e);
-            return this.shutdown("Aucune connexion internet détectée,<br>veuillez réessayer ultérieurement.");
+            // On nommait « aucune connexion internet » ce qui pouvait tout aussi
+            // bien etre un 502 du serveur d'index : le joueur redemarrait sa box
+            // pendant que la panne etait ailleurs.
+            return this.shutdown(`${config.describeError(e)}.<br>` +
+                `<span class="detail">${config.indexUrl}</span>`);
         })
     }
 
