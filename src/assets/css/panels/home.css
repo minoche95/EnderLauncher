@@ -1,403 +1,543 @@
+/*
+ * Ecran d'accueil.
+ *
+ * Contraintes imposees par home.js, a ne pas contredire :
+ *   .play-instance      remis a display:flex  quand le jeu s'arrete
+ *   .info-starting-game bascule entre block et none  -> cache par defaut ici
+ *   .instance-popup     bascule entre flex et none   -> cache par defaut ici
+ *   .instance-select    passe a none s'il n'y a qu'une instance
+ * Toute regle qui forcerait ces display serait ecrasee, ou pire, gagnerait.
+ */
+
 .home .container {
-    display: flex;
-    height: 100%;
-    flex-direction: column;
-    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+        "status  sidebar"
+        "content sidebar";
+    gap: var(--sp-3);
+    padding: 46px var(--sp-4) var(--sp-4);
+    /* Le fond est une capture de jeu : sans voile, aucun texte n'est lisible
+       sur les zones claires. */
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.55) 100%);
 }
 
-/*******************************************************************************
- *                                                                             *
- * Status server                                                               *
- *                                                                             *
- ******************************************************************************/
+.light .home .container {
+    background: linear-gradient(180deg, rgba(238, 240, 245, 0.55) 0%, rgba(238, 240, 245, 0.78) 100%);
+}
+
+/* ─── Bandeau d'etat du serveur ─────────────────────────────────────────── */
 
 .status-server {
-    position: relative;
+    grid-area: status;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    background: var(--background);
-    width: 25rem;
-    height: 3rem;
-    color: var(--color);
-    border-radius: 10px;
-    margin-top: 3rem;
-    padding: 1rem;
-    text-align: center;
+    gap: var(--sp-3);
+    padding: 12px var(--sp-3);
+    background: var(--surface-glass);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-md);
+    justify-self: start;
+    min-width: 300px;
 }
 
 .server-status-icon {
-    height: 3.3rem;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--r-md);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.server-status-infos {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
 }
 
 .server-status-name {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--element-color);
-    text-shadow: 0 0 8px rgba(160, 32, 240, 0.8);
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+/* Vert quand joignable, rouge sinon : setStatus() ajoute ou retire `red`. */
 .server-status-text {
-    font-size: 0.8rem;
-    font-weight: bold;
-    color: #1ac707;
+    font-size: 0.78rem;
+    color: var(--ok);
+    display: flex;
+    align-items: center;
+    gap: 7px;
 }
 
-.server-status-infos .red {
-    color: #ff4b6e;
+.server-status-text::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent);
+    flex-shrink: 0;
+}
+
+.server-status-text.red {
+    color: var(--danger);
 }
 
 .status-player-count {
-    background: var(--background-element);
-    border: 2px solid var(--element-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: var(--r-full);
+    background: color-mix(in srgb, var(--ok) 16%, transparent);
+    color: var(--ok);
+    font-weight: 600;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    transition: background-color var(--transition), color var(--transition);
 }
 
-.player-count {
-    font-size: 1.5rem;
-    margin: 0.4rem 0.5rem;
+.status-player-count.red {
+    background: color-mix(in srgb, var(--danger) 16%, transparent);
+    color: var(--danger);
 }
 
-.status-player-count:after {
-    position: absolute;
-    content: '';
-    width: 10px;
-    height: 10px;
-    top: 10px;
-    right: 10px;
-    border-radius: 15px;
-    border: solid 5px var(--background);
-    background: #1AC707;
-}
-
-.red:after {
-    background: #FF0409;
-}
+/* ─── Actualites et reseaux ─────────────────────────────────────────────── */
 
 .home-bottom {
-    position: relative;
-    width: 100%;
-    height: calc(100% - 80px - 8rem);
+    grid-area: content;
     display: flex;
+    align-items: stretch;
+    gap: var(--sp-3);
+    min-height: 0;
 }
-
-/*******************************************************************************
- *                                                                             *
- * news server                                                                 *
- *                                                                             *
- ******************************************************************************/
 
 .new-tab {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    width: 85%;
-    height: 100%;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    background: var(--surface-glass);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
 }
 
 .titre-tab-new {
-    color: var(--element-color);
-    font-weight: bold;
-    text-shadow: 0 0 10px rgba(160, 32, 240, 0.8);
-    border-radius: 12px;
+    padding: var(--sp-3) var(--sp-3) var(--sp-2);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+    flex-shrink: 0;
 }
 
 .news-list {
-    width: 90%;
-    height: 100%;
-    border-radius: 10px;
-    margin: 1rem 0;
+    flex: 1;
+    min-height: 0;
+    padding: 0 var(--sp-3) var(--sp-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
 }
 
 .news-block {
-    background: var(--background-transparent);
-    border: 1px solid rgba(160, 32, 240, 0.3);
-    transition: var(--transition);
+    background: var(--surface-hi);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: var(--sp-3);
+    transition: border-color var(--transition), transform var(--transition);
 }
 
 .news-block:hover {
-    background: rgba(160, 32, 240, 0.15);
-    transform: scale(1.01);
+    border-color: var(--line-hi);
+    transform: translateY(-1px);
 }
 
 .news-header {
     display: flex;
-    justify-content: space-between;
-    padding: 1rem 1.5rem;
     align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.news-header .server-status-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--r-sm);
+}
+
+.header-text {
+    flex: 1;
+    min-width: 0;
 }
 
 .header-text .title {
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    font-size: 1.2rem;
-    text-align: center;
+    font-weight: 600;
+    font-size: 0.92rem;
+    letter-spacing: -0.01em;
 }
 
 .news-header .date {
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-
-.news-content .bbWrapper {
-    padding: 0 1.5rem;
-    padding-bottom: 1rem;
-    font-size: 1.2rem;
-
-}
-
-.news-content .bbWrapper p {
-    font-weight: 100;
-    margin: 0;
-
-}
-
-.news-content .bbWrapper .news-author {
-    margin-top: 1rem;
-    text-align: end;
-    font-size: 0.8rem;
-}
-
-.news-content .bbWrapper .news-author span {
-    font-weight: 700;
-}
-
-/*******************************************************************************
- *                                                                             *
- * social server                                                               *
- *                                                                             *
- ******************************************************************************/
-
-.social-tab {
-    position: absolute;
-    display: flex;
-    bottom: 0;
-    right: 0;
-    width: 15%;
-    height: calc(80% - 1rem);
     justify-content: center;
-    margin-bottom: 1rem;
+    padding: 4px 10px;
+    border-radius: var(--r-sm);
+    background: var(--accent-soft);
+    color: var(--accent-hi);
+    line-height: 1.1;
+    flex-shrink: 0;
+}
+
+.news-header .date .day {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.news-header .date .month {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.85;
+}
+
+.news-content {
+    font-size: 0.87rem;
+    color: var(--color-dim);
+    line-height: 1.65;
+}
+
+.news-content p {
+    margin: 0 0 6px;
+}
+
+.news-author {
+    margin-top: 10px;
+    font-size: 0.76rem;
+    color: var(--color-faint);
+}
+
+.news-author span {
+    color: var(--accent-hi);
+    font-weight: 500;
+}
+
+/* Reseaux : colonne de pastilles a droite des actualites. */
+.social-tab {
+    display: flex;
+    flex-shrink: 0;
 }
 
 .social-list {
-    border-radius: 10px;
-    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    overflow: visible;
 }
 
 .social-block {
     display: flex;
-    background: var(--background-transparent);
-    width: 90px;
-    height: 90px;
-    margin-bottom: 1rem;
-    border-radius: 10px;
-    font-size: 2rem;
-    cursor: pointer;
     align-items: center;
     justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--r-md);
+    background: var(--surface-glass);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    color: var(--color-dim);
+    transition: color var(--transition), border-color var(--transition),
+                transform var(--transition), background-color var(--transition);
 }
 
 .social-block:hover {
-    background: var(--element-color);
-    transform: scale(1.1);
+    color: #fff;
+    background: #5865F2;               /* la teinte de Discord, au survol */
+    border-color: transparent;
+    transform: translateY(-2px);
 }
 
-.social-block .icon-social {
-    pointer-events: none;
+/* Contrairement aux autres icones du launcher, celles-ci ne sont pas des
+   glyphes mais des SVG poses en background-image par font.css. Il leur faut
+   donc une boite explicite — sans elle, le div reste a 0x0 — et --svg-color
+   pour les teinter selon le theme. */
+.icon-social {
+    width: 22px;
+    height: 22px;
     background-repeat: no-repeat;
-    height: 55%;
-    width: 55%;
+    background-position: center;
     filter: var(--svg-color);
+    pointer-events: none;              /* le clic doit viser .social-block */
+    transition: filter var(--transition);
 }
 
-/*******************************************************************************
- *                                                                             *
- * sidebar                                                                     *
- *                                                                             *
- ******************************************************************************/
+.social-block:hover .icon-social {
+    filter: brightness(0) invert(1);   /* blanc sur le bleu Discord */
+}
+
+/* ─── Colonne de droite ─────────────────────────────────────────────────── */
 
 .sidebar {
+    grid-area: sidebar;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    width: 100%;
-    height: 90px;
-    background: var(--background-transparent);
+    gap: var(--sp-3);
+    padding: var(--sp-4) var(--sp-3);
+    background: var(--surface-glass);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-md);
+    min-height: 0;
 }
 
 .player-options {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    border-radius: 15px;
-    height: 3rem;
-    margin: 0 1.5rem;
+    gap: var(--sp-2);
+    padding-top: var(--sp-2);
 }
 
+/* headplayer() pose background-image en style inline : on ne touche qu'a la
+   geometrie, jamais au fond. */
 .player-head {
-    background: url('../../images/default/setve.png'), no-repeat;
+    width: 88px;
+    height: 88px;
+    border-radius: var(--r-lg);
     background-size: cover;
-    image-rendering: pixelated;
-    transition: var(--transition);
-    height: 3rem;
-    width: 3rem;
-    pointer-events: none;
-    border-radius: 15px;
-}
-
-.player-menu {
-    color: var(--element-color);
-    transform: rotate(270deg);
-    pointer-events: none;
+    background-position: center;
+    background-color: var(--surface-hi);
+    border: 1px solid var(--line-hi);
+    box-shadow: var(--shadow-md);
+    image-rendering: pixelated;        /* une tete de skin fait 8x8 px */
 }
 
 .play-elements {
+    margin-top: auto;
+    width: 100%;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column;
+    gap: var(--sp-2);
 }
 
 .play-instance {
-    border: 2px solid var(--element-color);
-    border-radius: 15px;
-    transition: var(--transition);
-    box-shadow: 0 0 12px rgba(160, 32, 240, 0.5);
-}
-
-.play-instance:hover {
-    border-color: #fff;
-    box-shadow: 0 0 20px var(--element-color), 0 0 40px rgba(160, 32, 240, 0.6);
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    width: 100%;
 }
 
 .play-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 15px var(--sp-3);
     border: none;
-    border-radius: 10px;
-    background: var(--element-color);
-    color: white;
-    font-size: 2rem;
-    font-weight: bolder;
-    padding: 0 2rem;
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--accent-hi), var(--accent-lo));
+    color: #fff;
+    font-size: 0.98rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     cursor: pointer;
-    transition: var(--transition);
+    box-shadow: 0 6px 20px var(--accent-ring);
+    transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
 }
 
 .play-btn:hover {
-    background: #fff;
-    color: var(--element-color);
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(160, 32, 240, 0.8);
+    filter: brightness(1.08);
+    box-shadow: 0 10px 28px var(--accent-ring);
+    transform: translateY(-1px);
+}
+
+.play-btn:active {
+    transform: translateY(0) scale(0.985);
+    box-shadow: 0 4px 14px var(--accent-ring);
 }
 
 .instance-select {
     display: flex;
     align-items: center;
-    position: absolute;
-    right: -3;
-    top: -2;
-    color: var(--element-color);
-    font-size: 1rem;
-    height: calc(100% - 1px);
-    border: solid 3px var(--element-color);
-    text-align: center;
-    border-radius: 15px;
-    padding: 0 0.5rem;
+    justify-content: center;
+    width: 46px;
+    flex-shrink: 0;
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--accent-hi), var(--accent-lo));
+    color: #fff;
+    font-size: 13px;
     cursor: pointer;
+    box-shadow: 0 6px 20px var(--accent-ring);
+    transition: filter var(--transition);
 }
 
-.instance-select:before {
-    transform: rotate(270deg);
-    pointer-events: none;
+.instance-select:hover {
+    filter: brightness(1.12);
 }
 
+/* home.js le repasse a block au demarrage du jeu. */
 .info-starting-game {
     display: none;
+    width: 100%;
+    padding: 12px var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--surface-hi);
+    border: 1px solid var(--line);
+}
+
+.info-starting-game-text {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--color-dim);
+    margin-bottom: 9px;
     text-align: center;
 }
 
 .progress-bar {
+    -webkit-appearance: none;
     appearance: none;
-    height: 10px;
-    margin: 0.5rem 0;
+    display: block;
+    width: 100%;
+    height: 6px;
+    border: none;
+    border-radius: var(--r-full);
+    background: var(--line);
+    overflow: hidden;
 }
 
 .progress-bar::-webkit-progress-bar {
-    background-color: var(--background);
-    border: solid 1px var(--element-color);
-    border-radius: 10px;
+    background: var(--line);
+    border-radius: var(--r-full);
 }
 
 .progress-bar::-webkit-progress-value {
-    background-color: var(--element-color);
-    border-radius: 10px;
+    background: linear-gradient(90deg, var(--accent-hi), var(--accent-lo));
+    border-radius: var(--r-full);
+    transition: width var(--transition);
 }
 
 .settings-btn {
-    width: 3rem;
-    height: 3rem;
-    font-size: 3rem;
-    color: var(--element-color);
-    margin: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--r-md);
+    background: var(--surface-hi);
+    border: 1px solid var(--line);
+    color: var(--color-dim);
+    font-size: 17px;
     cursor: pointer;
-    transition: 0.3s ease;
+    align-self: flex-end;
+    transition: color var(--transition), border-color var(--transition),
+                transform var(--transition);
 }
 
 .settings-btn:hover {
-    transform: rotate(90deg);
-    color: #fff;
+    color: var(--color);
+    border-color: var(--line-hi);
+    transform: rotate(45deg);
 }
 
+/* ─── Choix de l'instance ───────────────────────────────────────────────── */
 
 .instance-popup {
     position: absolute;
-    display: none;
-    width: 100%;
-    height: 100%;
-    background: #000000b3;
-    z-index: 10;
-    flex-direction: column;
+    inset: 0;
+    z-index: 5;
+    display: none;                     /* home.js le passe a flex */
     align-items: center;
     justify-content: center;
-    text-align: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 .instances-tab {
     position: relative;
-    background: var(--background);
-    border-radius: 10px;
-    padding: 1rem 3rem;
+    width: min(420px, 80%);
+    max-height: 70%;
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.instances-tab p {
+    margin: 0 0 var(--sp-3);
+    font-weight: 600;
+    font-size: 1rem;
 }
 
 .close-popup {
     position: absolute;
+    top: var(--sp-3);
+    right: var(--sp-3);
     display: flex;
-    top: 10px;
-    right: 10px;
-    background: var(--shadow);
-    height: 30px;
-    width: 30px;
-    border-radius: 10px;
     align-items: center;
     justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--r-sm);
+    color: var(--color-faint);
+    font-size: 11px;
+    cursor: pointer;
+    transition: color var(--transition), background-color var(--transition);
 }
 
-.instances-tab p {
-    margin-top: 1.5rem;
-    font-size: 2rem;
+.close-popup:hover {
+    color: var(--color);
+    background: var(--line);
+}
+
+.instances-List {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    overflow: auto;
 }
 
 .instance-elements {
-    background: var(--background-element);
-    text-align: center;
-    border-radius: 10px;
-    margin: 0.5rem 0;
-    font-size: 1.5rem;
+    padding: 12px var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--surface-hi);
+    border: 1px solid transparent;
+    font-weight: 500;
     cursor: pointer;
+    transition: border-color var(--transition), background-color var(--transition);
 }
 
 .instance-elements:hover {
-    background: var(--element-color);
+    border-color: var(--line-hi);
 }
 
 .active-instance {
-    background: var(--element-color);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-hi);
 }

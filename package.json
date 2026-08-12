@@ -1,7 +1,7 @@
 {
   "name": "EnderLauncher",
   "preductname": "Ender Launcher",
-  "version": "3.1.2",
+  "version": "3.2.0",
   "description": "Launcher Minecraft pour le serveur EnderCraft",
   "main": "src/app.js",
   "author": {

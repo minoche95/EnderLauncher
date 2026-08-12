@@ -4,13 +4,34 @@
 @import 'panels/home.css';
 @import 'panels/settings.css';
 
+/* ─── Base ──────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    outline: none;
+}
+
 body {
     margin: 0;
     padding: 0;
+    overflow: hidden;
     user-select: none;
     color: var(--color);
-    font-family: 'Poppins';
-    font-weight: bolder;
+    background-color: var(--background);
+    /* setBackground() pose background-image et background-size en style inline :
+       on ne les declare pas ici, sinon on entrerait en conflit avec lui. */
+    background-position: center;
+    /* L'ancienne feuille imposait `font-weight: bolder` a tout le document.
+       C'est la premiere cause de l'aspect date : plus rien ne hierarchise,
+       tout crie. On repart d'une graisse normale et on monte au cas par cas. */
+    font-family: var(--font);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
 
 img {
@@ -18,8 +39,10 @@ img {
     user-select: none;
 }
 
-* {
-    outline: none;
+button,
+input {
+    font-family: inherit;
+    font-size: inherit;
 }
 
 input::-webkit-outer-spin-button,
@@ -28,79 +51,111 @@ input::-webkit-inner-spin-button {
     margin: 0;
 }
 
+/* ─── Defilement ────────────────────────────────────────────────────────── */
+
+/* L'ancienne feuille mettait `width: 0` : la barre disparaissait, et avec elle
+   toute indication qu'une liste continue plus bas. On la garde discrete mais
+   visible, et elle ne se colore qu'au survol de la zone. */
 .content-scroll {
     overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color var(--transition);
+}
+
+.content-scroll:hover {
+    scrollbar-color: var(--line-hi) transparent;
 }
 
 .content-scroll::-webkit-scrollbar {
-    width: 0;
+    width: 8px;
+    height: 8px;
 }
+
+.content-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.content-scroll::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: var(--r-full);
+    border: 2px solid transparent;
+    background-clip: content-box;
+    transition: background-color var(--transition);
+}
+
+.content-scroll:hover::-webkit-scrollbar-thumb {
+    background-color: var(--line-hi);
+    background-clip: content-box;
+}
+
+.content-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-faint);
+    background-clip: content-box;
+}
+
+/* ─── Barre de fenetre ──────────────────────────────────────────────────── */
 
 .dragbar {
     position: fixed;
-    top: 0px;
-    left: 0px;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 26px;
+    height: 38px;
     -webkit-app-region: drag;
     z-index: 11;
 }
 
-.darwin .frame {
-    background: transparent;
+.darwin .frame,
+.other .frame {
     position: fixed;
-    top: 0px;
-    z-index: 11;
+    top: 0;
+    z-index: 12;
     -webkit-app-region: no-drag;
     display: none;
+    height: 38px;
+    align-items: center;
+}
+
+.darwin .frame {
+    left: 0;
+    padding-left: 14px;
+    gap: 8px;
 }
 
 .other .frame {
-    background: transparent;
-    position: fixed;
-    top: 0px;
-    right: 0px;
-    z-index: 11;
-    -webkit-app-region: no-drag;
-    display: none;
+    right: 0;
 }
 
+/* Nommage inverse mais c'est celui de launcher.js : `hide` est bascule pour
+   AFFICHER la barre correspondant a la plateforme. Ne pas « corriger ». */
 .frame.hide {
-    display: block;
+    display: flex;
 }
 
 .darwin .button-frame {
     position: relative;
-    display: table-cell;
-    width: 20px;
-    height: 26px;
-    transition: color .2s, background-color .2s;
+    width: 13px;
+    height: 13px;
+    cursor: pointer;
 }
 
 .other .button-frame {
     position: relative;
-    display: table-cell;
-    width: 30px;
-    height: 26px;
-    transition: color .2s, background-color .2s;
-    color: black;
+    width: 46px;
+    height: 38px;
     cursor: pointer;
+    color: var(--color-dim);
+    transition: background-color var(--transition), color var(--transition);
 }
 
-.button-frame:before {
+.other .button-frame:before {
     position: absolute;
-    top: 6px;
-    left: 8px;
-    width: 14px;
-    height: 14px;
-    font-size: 14px;
-    color: #f8f9f9;
-}
-
-.darwin-icon-minimize,
-.darwin-icon-maximize,
-.darwin-icon-close {
-    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    line-height: 1;
 }
 
 .darwin-icon-minimize:before,
@@ -108,88 +163,129 @@ input::-webkit-inner-spin-button {
 .darwin-icon-close:before {
     content: '';
     position: absolute;
+    inset: 0;
     border-radius: 50%;
-    width: 12px;
-    height: 12px;
     cursor: pointer;
+    transition: filter var(--transition);
 }
 
-.darwin-icon-maximize:before {
-    background: #07d014;
+.darwin-icon-maximize:before { background: #28c840; }
+.darwin-icon-minimize:before { background: #febc2e; }
+.darwin-icon-close:before    { background: #ff5f57; }
+
+.darwin .frame:hover .button-frame:before {
+    filter: brightness(1.12);
 }
 
-.darwin-icon-minimize:before {
-    background: #ffbd2e;
+.other .icon-minimize:hover,
+.other .icon-restore-down:hover,
+.other .icon-maximize:hover {
+    background-color: var(--line);
+    color: var(--color);
 }
 
-.darwin-icon-close:before {
-    background: #ff6047;
+.other .icon-close:hover {
+    background-color: #e5484d;
+    color: #fff;
 }
 
-.icon-close:hover {
-    background: #e21212;
-}
-
-.icon-minimize:hover,
-.icon-restore-down:hover,
-.icon-maximize:hover {
-    background-color: #0000009d;
-}
+/* ─── Popup ─────────────────────────────────────────────────────────────── */
 
 .popup {
     position: absolute;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     z-index: 10;
     display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    /* popup.js impose background en style inline (#000000b3 ou 'none') ; on ne
+       le declare donc pas, on se contente de flouter ce qu'il y a derriere. */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: popup-in var(--transition) both;
 }
 
 .popup-tab {
-    width: 40%;
-    padding: 15px;
-    background: var(--background);
-    border-radius: 15px;
+    width: min(460px, 82%);
+    padding: var(--sp-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
     z-index: 10;
+    text-align: center;
+    animation: popup-rise var(--transition-slow) both;
 }
 
 .popup-title {
-    text-align: center;
-    font-size: 2rem;
-    border-bottom: solid 4px var(--color);
-    margin-bottom: 1rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: var(--sp-2);
+    /* Un soulignement de 4 px pleine largeur faisait tres « 2012 ». */
+    border-bottom: none;
+}
+
+.popup-content {
+    font-size: 0.94rem;
+    color: var(--color-dim);
+    line-height: 1.6;
+    word-break: break-word;
 }
 
 .popup-options {
     display: none;
-    align-items: end;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+    margin-top: var(--sp-3);
 }
 
 .popup-button {
-    background: none;
-    color: var(--color);
-    border: solid 4px var(--element-color);
-    border-radius: 10px;
-    padding: 0.3rem 4rem;
-    font-size: inherit;
-    font-weight: bold;
-    margin: 15px 10px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-md);
+    padding: 10px 30px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: background-color var(--transition), transform var(--transition);
 }
+
+.popup-button:hover  { background: var(--accent-hi); }
+.popup-button:active { transform: scale(0.97); }
+
+@keyframes popup-in {
+    from { opacity: 0 }
+    to   { opacity: 1 }
+}
+
+@keyframes popup-rise {
+    from { opacity: 0; transform: translateY(10px) scale(0.985) }
+    to   { opacity: 1; transform: none }
+}
+
+/* ─── Panneaux ──────────────────────────────────────────────────────────── */
 
 .panel {
     position: absolute;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     opacity: 0;
     z-index: 0;
     pointer-events: none;
+    transition: opacity var(--transition-slow);
 }
 
 .active {
     opacity: 1;
     z-index: 1;
     pointer-events: all;
+}
+
+.container {
+    position: relative;
+    width: 100%;
+    height: 100%;
 }

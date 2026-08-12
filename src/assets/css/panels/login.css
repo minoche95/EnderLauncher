@@ -1,50 +1,113 @@
+/*
+ * Ecran de connexion.
+ *
+ * login.js affiche l'onglet voulu avec `style.display = 'block'` : les onglets
+ * sont donc caches ici, et centres par le conteneur plutot que par un flex
+ * interne, qui serait ecrase par ce display.
+ */
+
 .login .container {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100%;
+    padding: 46px var(--sp-4) var(--sp-4);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.62) 100%);
+}
+
+.light .login .container {
+    background: linear-gradient(180deg, rgba(238, 240, 245, 0.62) 0%, rgba(238, 240, 245, 0.82) 100%);
 }
 
 .login-tabs {
-    position: absolute;
-    padding: 15px;
-    background: var(--background);
-    border-radius: 15px;
-    text-align: center;
-    min-width: 40%;
-}
-
-.login-home,
-.login-offline,
-.login-AZauth,
-.login-AZauth-A2F {
     display: none;
+    width: min(400px, 90%);
+    padding: var(--sp-5) var(--sp-4);
+    text-align: center;
+    background: var(--surface-glass);
+    backdrop-filter: blur(22px) saturate(1.4);
+    -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
 }
 
 .login-text {
-    font-size: 1.3rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.45;
+    margin-bottom: var(--sp-4);
 }
 
-.connect,
+.input-login {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-4);
+}
+
+.input-login input {
+    width: 100%;
+    padding: 13px var(--sp-3);
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface-hi);
+    color: var(--color);
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.input-login input::placeholder {
+    color: var(--color-faint);
+}
+
+.input-login input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.login-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.connect {
+    width: 100%;
+    padding: 14px var(--sp-3);
+    border: none;
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--accent-hi), var(--accent-lo));
+    color: #fff;
+    font-size: 0.97rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 6px 20px var(--accent-ring);
+    transition: filter var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.connect:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 28px var(--accent-ring);
+}
+
+.connect:active {
+    transform: translateY(0) scale(0.985);
+}
+
 .cancel {
-    background: none;
-    color: var(--color);
-    border: solid 4px var(--element-color);
-    border-radius: 10px;
-    padding: 0.3rem 4rem;
-    font-size: inherit;
-    font-weight: bold;
-    margin: 15px 10px;
+    width: 100%;
+    padding: 12px var(--sp-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: transparent;
+    color: var(--color-dim);
+    font-weight: 500;
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition);
 }
 
-.input-login .email,
-.input-login .password,
-.A2F {
+.cancel:hover {
     color: var(--color);
-    background: none;
-    border: solid 2px var(--element-color);
-    border-radius: 30px;
-    width: 50%;
-    padding: 0.4rem 1rem;
-    margin-top: 10px;
+    border-color: var(--line-hi);
 }

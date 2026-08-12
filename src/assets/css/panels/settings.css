@@ -1,413 +1,471 @@
+/*
+ * Ecran des parametres.
+ *
+ * Le curseur de RAM est positionne en JavaScript : slider.js lit
+ * `touchLeft.offsetWidth` et ecrit `style.left`, `marginLeft` et `width`.
+ * La geometrie de 18 px des poignees et le retrait correspondant de la ligne
+ * font donc partie du calcul — on en change l'apparence, jamais les mesures.
+ */
+
 .settings .container {
-    display: flex;
-    height: 100%;
+    display: grid;
+    grid-template-columns: 230px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: var(--sp-3);
+    padding: 46px var(--sp-4) var(--sp-4);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.62) 100%);
 }
+
+.light .settings .container {
+    background: linear-gradient(180deg, rgba(238, 240, 245, 0.62) 0%, rgba(238, 240, 245, 0.82) 100%);
+}
+
+/* ─── Navigation ────────────────────────────────────────────────────────── */
 
 .nav-settings {
-    width: 20%;
-    height: 100%;
-    background: var(--background);
     display: flex;
-    align-items: center;
     flex-direction: column;
-    justify-content: center;
-    font-size: 2.5rem;
+    padding: var(--sp-4) var(--sp-3);
+    background: var(--surface-glass);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-md);
+    min-height: 0;
 }
 
-.nav-settings p {
-    font-size: 60%;
-    margin-top: 80px;
+.nav-settings > p {
+    margin: 0 0 var(--sp-4);
+    padding-left: var(--sp-2);
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
 }
 
 .nav-box {
-    width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
-}
-
-.nav-box #save {
-    border: solid 4px var(--background-element);
-    margin: 3rem;
+    gap: 2px;
 }
 
 .nav-settings-btn {
-    font-size: 50%;
-    border: solid 4px var(--element-color);
-    padding: 5px 10px;
-    border-radius: 10px;
-    width: 70%;
-    text-align: center;
-    margin: 0.5rem 0;
+    position: relative;
+    padding: 11px var(--sp-3);
+    border-radius: var(--r-md);
+    /* Les libelles sont en majuscules dans le HTML ; on ramene une casse et un
+       interlettrage lisibles plutot que d'empiler les effets. */
+    font-size: 0.86rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    color: var(--color-dim);
     cursor: pointer;
+    transition: color var(--transition), background-color var(--transition);
+}
+
+.nav-settings-btn:hover {
+    color: var(--color);
+    background: var(--line);
 }
 
 .active-settings-BTN {
-    background: var(--element-color);
+    color: var(--accent-hi);
+    background: var(--accent-soft);
+    font-weight: 600;
 }
+
+.active-settings-BTN::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 18px;
+    border-radius: var(--r-full);
+    background: var(--accent);
+}
+
+/* ─── Contenu ───────────────────────────────────────────────────────────── */
 
 .container-settings {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    right: 0;
-    width: 80%;
-    height: calc(100% - 26px);
-    opacity: 0;
-    pointer-events: none;
-
-}
-
-.settings-elements-box {
-    background: var(--background-element);
-    width: 80%;
-    border-radius: 10px;
-    padding: 1.5rem 2rem;
-    margin: 0.5rem;
-}
-
-.setting-text {
-    font-size: 0.8rem;
+    display: none;
+    padding: var(--sp-4);
+    background: var(--surface-glass);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-md);
+    min-height: 0;
+    overflow: auto;
 }
 
 .active-container-settings {
-    opacity: 1;
-    z-index: 1;
-    pointer-events: all;
+    display: block;
 }
 
 .titre-tab {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 2rem;
-    margin: 1.5rem 0;
-    padding: 0.5rem 2rem;
-    border-radius: 2rem;
-    text-align: center;
-    background: var(--background-transparent);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+    margin-bottom: var(--sp-2);
+}
+
+.titre-tab:not(:first-child) {
+    margin-top: var(--sp-4);
+}
+
+.settings-elements-box {
+    padding: var(--sp-3);
+    background: var(--surface-hi);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    margin-bottom: var(--sp-3);
+}
+
+.setting-text {
+    font-size: 0.83rem;
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--color-dim);
+}
+
+.setting-text b {
     color: var(--color);
+    font-weight: 600;
 }
 
 .settings-elements {
-    margin-top: 1.5rem;
     display: flex;
     align-items: center;
-    width: 100%;
-}
-
-.content-center {
-    justify-content: center;
-}
-
-.content-evenly {
-    justify-content: space-evenly;
-}
-
-/*******************************************************************************
- *                                                                             *
- * account tab                                                                 *
- *                                                                             *
- ******************************************************************************/
-.accounts-list {
-    max-height: 90%;
-    display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    align-content: flex-start;
+    gap: var(--sp-2);
+    margin-top: var(--sp-3);
 }
 
-.account {
-    background: var(--background-element);
-    border: solid 4px var(--background-element);
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    width: calc(400px - 8px);
-    height: calc(100px - 8px);
-    margin: 1rem;
-    border-radius: 15px;
-}
+.content-evenly { justify-content: space-evenly; }
+.content-center  { justify-content: center; }
 
-.account-select {
-    border: solid 4px var(--element-color);
-}
+/* ─── Boutons de reglage, forme commune ─────────────────────────────────── */
 
-.accounts-list #add {
-    justify-content: center;
-    cursor: pointer;
-}
-
-.add-profile {
-    width: 70px;
-    height: 70px;
-    font-size: 3rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    pointer-events: none;
-}
-
-.add-text-profile {
-    font-size: 1.5rem;
-    pointer-events: none;
-}
-
-.profile-image {
-    width: 70px;
-    height: 70px;
-    background: url(../../images/default/setve.png);
-    background-size: cover;
-    border-radius: 15px;
-    pointer-events: none;
-    image-rendering: pixelated;
-}
-
-.profile-infos {
+.java-path-btn,
+.size-btn,
+.max-files-btn,
+.theme-btn,
+.close-btn {
+    padding: 10px var(--sp-3);
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--color-dim);
+    font-size: 0.84rem;
+    font-weight: 500;
     text-align: center;
-    width: 10rem;
-    pointer-events: none;
-
-}
-
-.profile-pseudo {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 1.5rem;
-    pointer-events: none;
-
-}
-
-.profile-uuid {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    pointer-events: none;
-
-}
-
-.delete-profile {
-    width: 70px;
-    height: 70px;
-    background: var(--background-transparent);
-    border-radius: 15px;
-    font-size: 3rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #ff2c2c;
     cursor: pointer;
+    transition: color var(--transition), border-color var(--transition),
+                background-color var(--transition);
 }
 
-.delete-profile-icon {
-    pointer-events: none;
-}
-
-/*******************************************************************************
- *                                                                             *
- * java tab                                                                    *
- *                                                                             *
- ******************************************************************************/
-
-.memory-slider {
-    position: relative;
-    margin: 0 1.5rem 0 0;
-    height: 18px;
-    width: 50%;
-    user-select: none;
-}
-
-.slider-touch-left,
-.slider-touch-right {
-    box-sizing: border-box;
-    display: block;
-    position: absolute;
-    height: 18px;
-    width: 18px;
-    z-index: 2;
-}
-
-.slider-touch-left span,
-.slider-touch-right span {
-    display: block;
-    width: 20px;
-    height: 10px;
-    background: #bbb;
-    border: 4px solid var(--element-color);
-    transition: background-color .2s, border .2s;
-    border-radius: 18px;
-    cursor: pointer;
-}
-
-.slider-touch-left span:after,
-.slider-touch-right span:after {
-    content: attr(value);
-    color: var(--element-color);
-    font: normal normal bold 12px/18px Poppins;
-    white-space: nowrap;
-    pointer-events: none;
-    position: absolute;
-    top: -20px;
-    left: 83%;
-    transform: translate(-50%);
-}
-
-.slider-line {
-    box-sizing: border-box;
-    position: absolute;
-    width: calc(100% - 18px);
-    left: 9px;
-    top: 7px;
-    height: 4px;
-    border-radius: 4px;
-    background-color: #f5f5f5;
-    transition: background-color .2s;
-    z-index: 0;
-    overflow: hidden;
-}
-
-.slider-line span {
-    display: block;
-    height: 100%;
-    width: 0%;
-    background: var(--element-color);
-    transition: background-color .2s;
-}
-
-.ram-info-block {
-    font-size: 0.9rem;
+.java-path-btn:hover,
+.size-btn:hover,
+.max-files-btn:hover,
+.theme-btn:hover,
+.close-btn:hover {
     color: var(--color);
+    border-color: var(--line-hi);
+}
+
+/* Etat retenu : meme traitement que l'onglet actif, pour qu'on lise d'un coup
+   d'oeil ce qui est selectionne. */
+.active-theme,
+.active-close {
+    color: var(--accent-hi);
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    font-weight: 600;
+}
+
+.theme-box,
+.close-box {
+    gap: var(--sp-2);
+}
+
+/* ─── Champs ────────────────────────────────────────────────────────────── */
+
+.java-path-input-text,
+.input-resolution,
+.input-max-files {
+    padding: 10px var(--sp-3);
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--color);
+    font-weight: 500;
+    text-align: center;
+    transition: border-color var(--transition), box-shadow var(--transition);
 }
 
 .java-path-input-text {
-    background: var(--shadow);
-    border: none;
-    color: var(--color);
-    padding: 0.5rem 1rem;
-    border-radius: 15px;
-    width: 50%;
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    color: var(--color-faint);
+    cursor: not-allowed;
 }
 
+.input-resolution,
+.input-max-files {
+    width: 96px;
+}
+
+.input-resolution:focus,
+.input-max-files:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* settings.js declenche ce champ par un clic programme sur le bouton. */
 .java-path-input-file {
     display: none;
 }
 
 .java-path-box {
     display: flex;
-    align-items: center;
+    gap: var(--sp-1);
 }
 
-.java-path-btn {
-    padding: 0.3rem 1rem;
-    background: var(--element-color);
-    border-radius: 15px;
-    margin: 0 1rem;
-    cursor: pointer;
+.java-path-txt {
+    color: var(--accent-hi);
+    word-break: break-all;
 }
 
-/*******************************************************************************
- *                                                                             *
- * resolution tab                                                              *
- *                                                                             *
- ******************************************************************************/
 .input-size-element {
     display: flex;
     align-items: center;
-}
-
-.input-resolution {
-    background: var(--shadow);
-    border: none;
-    color: var(--color);
-    padding: 0.5rem 1rem;
-    border-radius: 15px;
-    text-align: center;
-    width: 6rem;
+    gap: var(--sp-2);
 }
 
 .size-cross {
-    margin: 0 0.5rem;
+    width: 10px;
+    height: 10px;
+    position: relative;
+    opacity: 0.45;
 }
 
-.size-cross:before {
-    font: normal normal bold 20px Icons;
-    content: "\e90e";
+.size-cross::before,
+.size-cross::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1.5px;
+    background: var(--color);
+    border-radius: 2px;
 }
 
-.size-btn {
-    padding: 0.3rem 1rem;
-    background: var(--element-color);
-    border-radius: 15px;
-    margin: 0 1rem;
+.size-cross::before { transform: rotate(45deg); }
+.size-cross::after  { transform: rotate(-45deg); }
+
+/* ─── Curseur de RAM ────────────────────────────────────────────────────── */
+
+.memory-slider {
+    position: relative;
+    height: 18px;
+    width: 55%;
+    min-width: 220px;
+    user-select: none;
+}
+
+.slider-touch-left,
+.slider-touch-right {
+    display: block;
+    position: absolute;
+    height: 18px;
+    width: 18px;      /* lu par slider.js via offsetWidth — ne pas modifier */
+    z-index: 2;
+}
+
+.slider-touch-left span,
+.slider-touch-right span {
+    display: block;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    border: 5px solid var(--accent);
+    box-shadow: var(--shadow-sm);
+    cursor: grab;
+    transition: border-color var(--transition), transform var(--transition);
+}
+
+.slider-touch-left span:hover,
+.slider-touch-right span:hover {
+    transform: scale(1.12);
+}
+
+.slider-touch-left span:active,
+.slider-touch-right span:active {
+    cursor: grabbing;
+}
+
+.slider-touch-left span:after,
+.slider-touch-right span:after {
+    content: attr(value);      /* la valeur vit dans l'attribut, pas en texte */
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 2px 8px;
+    border-radius: var(--r-full);
+    background: var(--accent);
+    color: #fff;
+    font: 600 11px/1.5 var(--font);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.slider-line {
+    position: absolute;
+    left: 9px;                 /* la moitie d'une poignee */
+    top: 7px;
+    width: calc(100% - 18px);
+    height: 4px;
+    border-radius: var(--r-full);
+    background: var(--line-hi);
+    overflow: hidden;
+    z-index: 0;
+}
+
+.slider-line span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--accent-hi), var(--accent-lo));
+}
+
+.ram-info-block {
+    font-size: 0.82rem;
+    line-height: 1.8;
+    color: var(--color-dim);
+}
+
+.ram-info-block b { font-weight: 400; }
+
+.ram-info-block span {
+    color: var(--accent-hi);
+    font-weight: 600;
+}
+
+/* ─── Comptes ───────────────────────────────────────────────────────────── */
+
+.accounts-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    max-height: 100%;
+}
+
+.account {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: 12px var(--sp-3);
+    background: var(--surface-hi);
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
     cursor: pointer;
+    transition: border-color var(--transition), background-color var(--transition);
 }
 
-/*******************************************************************************
- *                                                                             *
- * Launcher tab                                                                *
- *                                                                             *
- ******************************************************************************/
-
-.input-max-files {
-    background: var(--shadow);
-    border: none;
-    color: var(--color);
-    padding: 0.5rem 1rem;
-    border-radius: 15px;
-    text-align: center;
-    width: 4rem;
-    margin-right: 1rem;
+.account:hover {
+    border-color: var(--line-hi);
 }
 
-.max-files-btn {
-    padding: 0.3rem 1rem;
-    background: var(--element-color);
-    border-radius: 15px;
-    margin: 0 1rem;
+.account-select {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.profile-image {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--r-sm);
+    background-size: cover;
+    background-position: center;
+    background-color: var(--background-element);
+    image-rendering: pixelated;
+    flex-shrink: 0;
+}
+
+.profile-infos {
+    flex: 1;
+    min-width: 0;
+}
+
+.profile-pseudo {
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.profile-uuid {
+    font-size: 0.72rem;
+    color: var(--color-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.delete-profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--r-sm);
+    color: var(--color-faint);
     cursor: pointer;
+    flex-shrink: 0;
+    transition: color var(--transition), background-color var(--transition);
 }
 
-.theme-btn {
-    margin: 0 1rem;
-    padding: calc(0.1rem + 4px) calc(1.5rem + 4px);
-    border-radius: 15px;
-    cursor: pointer;
+.delete-profile:hover {
+    color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
 }
 
-.theme-btn-clair {
-    background: var(--light-color);
-    color: var(--dark-color);
-    border: 2px solid var(--dark-color);
+.delete-profile-icon {
+    font-size: 14px;
+    pointer-events: none;
 }
 
-.theme-btn-sombre {
-    background: var(--dark-color);
-    color: var(--light-color);
-    border: 2px solid var(--color);
+/* La carte « Ajouter un compte » : bordure pointillee, elle se lit comme une
+   action et non comme un compte existant. */
+#add {
+    justify-content: center;
+    gap: var(--sp-2);
+    background: transparent;
+    border: 1px dashed var(--line-hi);
+    color: var(--color-dim);
 }
 
-.theme-btn-auto {
-    background: var(--background);
-    color: var(--color);
-    border: 2px solid var(--color);
+#add:hover {
+    border-color: var(--accent);
+    color: var(--accent-hi);
+    background: var(--accent-soft);
 }
 
-.active-theme {
-    border: 4px solid var(--element-color);
+.add-profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
 }
 
-.close-btn {
-    font-size: 0.95rem;
-    width: 200px;
-    text-align: center;
-    border: 4px solid var(--color);
-    border-radius: 15px;
-    padding: 1rem;
-    cursor: pointer;
-}
-
-.active-close {
-    border: 4px solid var(--element-color);
+.add-text-profile {
+    font-weight: 500;
+    font-size: 0.9rem;
 }

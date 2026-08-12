@@ -1,129 +1,145 @@
 @import "font.css";
 @import 'theme.css';
 
-body {
-    background-color: var(--background);
-    font-family: "Poppins";
-    letter-spacing: 0px;
+/*
+ * Fenetre de demarrage.
+ *
+ * index.js pose `display: block` sur #splash, puis ajoute successivement les
+ * classes `opacity` et `translate` pour l'entree, et bascule `show` sur la
+ * barre de progression. Ces classes portent donc l'etat VISIBLE : l'etat de
+ * depart est l'invisibilite, defini ici.
+ */
+
+* {
+    box-sizing: border-box;
+    outline: none;
 }
 
-img {
-    -webkit-user-drag: none;
+body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
     user-select: none;
+    -webkit-app-region: drag;
+    color: var(--color);
+    background: var(--background);
+    font-family: var(--font);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Une lueur d'accent derriere le logo : donne de la profondeur a une fenetre
+   qui, sans elle, n'est qu'un rectangle gris. */
+body::before {
+    content: '';
+    position: absolute;
+    top: -30%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+#splash {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-5) var(--sp-4);
+    text-align: center;
 }
 
 .splash {
-    position: absolute;
-    top: 180px;
-    left: 50%;
-    transform: translate(-50%);
-    width: 140px;
-    height: 140px;
-    transition: opacity .3s, top 1.5s;
+    width: 116px;
+    height: 116px;
+    border-radius: 26px;
+    object-fit: cover;
     opacity: 0;
+    transform: translateY(14px);
+    box-shadow: var(--shadow-lg);
+    transition: opacity 600ms ease, transform 600ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.splash.opacity {
-    opacity: 1;
-}
-
-.splash.translate {
-    top: 129px;
-}
+.splash.opacity  { opacity: 1; }
+.splash.translate { transform: translateY(0); }
 
 .splash-message {
-    position: absolute;
-    top: 289px;
-    left: 0px;
-    width: 400px;
-    font: normal normal bold 19px/29px Poppins;
-    text-align: center;
-    letter-spacing: 0px;
-    transition: opacity 1.5s;
-    color: var(--color);
+    margin: var(--sp-4) 0 0;
+    font-size: 1.02rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     opacity: 0;
-}
-
-.splash-message.opacity {
-    opacity: 1;
+    transition: opacity 600ms ease;
 }
 
 .splash-author {
-    position: absolute;
-    top: 326px;
-    left: 0px;
-    width: 400px;
-    text-align: center;
-    transition: opacity 1.5s;
-    font: normal normal normal 9px/13px Poppins;
-    color: var(--color);
+    margin: var(--sp-1) 0 0;
+    font-size: 0.78rem;
+    color: var(--color-faint);
     opacity: 0;
+    transition: opacity 600ms ease;
 }
 
-.splash-author .author {
-    font: normal normal bold 9px/13px Poppins;
-}
-
-.splash-author.opacity {
-    opacity: 1;
-}
-
-.message {
-    position: absolute;
-    top: 347px;
-    left: 0px;
-    width: 400px;
-    text-align: center;
-    transition: opacity 1.5s;
-    font: normal normal bold 18px/27px Poppins;
-    color: var(--color);
-    opacity: 0;
-}
-
-.download-update {
-    position: absolute;
-    left: 25%;
-    margin-top: 20px;
-    width: 200px;
-    font: normal normal bold 22px / 45px Poppins;
-    color: var(--color);
-    border: 2px solid var(--color);
-    border-radius: 15px;
-    transition: background-color .2s, color .2s;
-}
-
-.download-update:hover {
-    background-color: var(--color);
-    color: var(--background);
-    cursor: pointer;
-}
-
+.splash-message.opacity,
+.splash-author.opacity,
 .message.opacity {
     opacity: 1;
 }
 
-.progress {
-    position: absolute;
-    top: 410px;
-    left: 106px;
-    width: 189px;
-    height: 10px;
-    appearance: none;
-    transition: opacity .2s;
+.message {
+    margin: var(--sp-5) 0 0;
+    min-height: 1.4em;
+    font-size: 0.86rem;
+    color: var(--color-dim);
     opacity: 0;
+    transition: opacity 400ms ease;
 }
 
-.show {
-    opacity: 1;
+/* Lien de telechargement propose quand la mise a jour ne peut pas etre
+   appliquee automatiquement (macOS et Linux). */
+.download-update {
+    display: inline-block;
+    margin-top: var(--sp-2);
+    padding: 9px 22px;
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--accent-hi), var(--accent-lo));
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    box-shadow: 0 6px 20px var(--accent-ring);
+    transition: filter var(--transition);
 }
+
+.download-update:hover { filter: brightness(1.1); }
+
+.progress {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;                 /* `show` la revele */
+    width: min(280px, 70%);
+    height: 5px;
+    margin-top: var(--sp-3);
+    border: none;
+    border-radius: var(--r-full);
+    background: var(--line-hi);
+    overflow: hidden;
+}
+
+.progress.show { display: block; }
 
 .progress::-webkit-progress-bar {
-    background-color: var(--background);
-    border: solid 1px var(--element-color);
-    border-radius: 10px;
+    background: var(--line-hi);
+    border-radius: var(--r-full);
 }
 
 .progress::-webkit-progress-value {
-    background-color: var(--element-color);
-    border-radius: 10px;
+    background: linear-gradient(90deg, var(--accent-hi), var(--accent-lo));
+    border-radius: var(--r-full);
+    transition: width 200ms ease;
 }
