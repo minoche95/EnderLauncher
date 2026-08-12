@@ -47,6 +47,13 @@ pre{background:#0b0d11;border:1px solid var(--line);border-radius:7px;padding:12
 .bar>div{height:100%;background:var(--acc)}
 .spark{display:flex;align-items:flex-end;gap:3px;height:52px}
 .spark>div{flex:1;background:#1f6feb;border-radius:2px 2px 0 0;min-height:2px}
+input[type=text],input[type=date],textarea{background:#0b0d11;color:var(--txt);
+  border:1px solid var(--line);border-radius:7px;padding:7px 9px;font:inherit;
+  width:100%;min-width:0}
+input:focus,textarea:focus{outline:none;border-color:var(--acc)}
+textarea{min-height:72px;resize:vertical}
+.art{border:1px solid var(--line);border-radius:9px;padding:12px;
+     margin-bottom:10px;display:grid;gap:8px}
 </style>
 </head>
 <body>
@@ -70,6 +77,22 @@ pre{background:#0b0d11;border:1px solid var(--line);border-radius:7px;padding:12
       <span class="muted" id="pubmsg"></span>
     </div>
     <pre id="publog" style="margin-top:12px;display:none"></pre>
+  </div>
+
+  <div class="card">
+    <h2>Annonces du launcher</h2>
+    <div class="muted" style="margin-bottom:12px">
+      Affichées à l'accueil du launcher, la plus récente en haut.
+      Indépendantes du pack : elles prennent effet dès l'enregistrement, sans
+      republier. Le contenu accepte du HTML simple (<span class="mono">&lt;b&gt;</span>,
+      <span class="mono">&lt;a href&gt;</span>) et les retours à la ligne sont conservés.
+    </div>
+    <div id="articles">…</div>
+    <div class="row" style="margin-top:12px">
+      <button onclick="addArticle()">Ajouter une annonce</button>
+      <button class="primary" id="artsave" onclick="saveArticles()">Enregistrer</button>
+      <span class="muted" id="artmsg"></span>
+    </div>
   </div>
 
   <div class="card">
@@ -211,6 +234,84 @@ async function loadStats() {
       t[1] + "</td></tr>").join("") + "</tbody></table>";
 }
 
+let articles = [], artDirty = false;
+
+function artTouched() {
+  artDirty = true;
+  document.getElementById("artmsg").textContent = "Modifications non enregistrées";
+}
+
+async function loadArticles() {
+  // « Rafraîchir » recharge tout le panneau : sans ce garde, un clic distrait
+  // effacerait une annonce en cours de rédaction sans rien demander.
+  if (artDirty && !confirm("Des annonces non enregistrées seront perdues. Recharger ?"))
+    return;
+  articles = await api("/api/articles");
+  if (!Array.isArray(articles)) articles = [];
+  artDirty = false;
+  renderArticles();
+  document.getElementById("artmsg").textContent = "";
+}
+
+// Rendu complet uniquement a l'ajout et a la suppression : le refaire a chaque
+// frappe recreerait les champs et ferait perdre le focus au bout d'une lettre.
+function renderArticles() {
+  const el = document.getElementById("articles");
+  if (!articles.length) {
+    el.innerHTML = '<span class="muted">Aucune annonce — le launcher affiche ' +
+      "alors son message par défaut.</span>";
+    return;
+  }
+  el.innerHTML = articles.map((a, i) =>
+    '<div class="art">' +
+      '<div class="row">' +
+        '<input type="text" placeholder="Titre" value="' + esc(a.title || "") +
+          '" oninput="setArt(' + i + ",'title',this.value)\">" +
+        '<input type="text" placeholder="Auteur" style="flex:0 0 170px" value="' +
+          esc(a.author || "") + '" oninput="setArt(' + i + ",'author',this.value)\">" +
+        '<input type="date" style="flex:0 0 165px" value="' +
+          esc(a.publish_date || "") + '" oninput="setArt(' + i +
+          ",'publish_date',this.value)\">" +
+      "</div>" +
+      '<textarea placeholder="Contenu de l\'annonce" oninput="setArt(' + i +
+        ",'content',this.value)\">" + esc(a.content || "") + "</textarea>" +
+      '<div class="row"><span style="flex:1"></span>' +
+        '<button class="danger" onclick="delArticle(' + i + ')">Supprimer</button>' +
+      "</div>" +
+    "</div>").join("");
+}
+
+function setArt(i, k, v) {
+  articles[i][k] = v;
+  artTouched();
+}
+
+function addArticle() {
+  articles.unshift({title: "", content: "", author: "EnderCraft",
+                    publish_date: new Date().toISOString().slice(0, 10)});
+  renderArticles();
+  artTouched();
+}
+
+function delArticle(i) {
+  if (!confirm("Supprimer l'annonce « " + (articles[i].title || "sans titre") + " » ?"))
+    return;
+  articles.splice(i, 1);
+  renderArticles();
+  artTouched();
+}
+
+async function saveArticles() {
+  const b = document.getElementById("artsave"), m = document.getElementById("artmsg");
+  b.disabled = true; m.textContent = "Enregistrement…";
+  const r = await api("/api/articles", {method: "POST",
+    headers: {"Content-Type": "application/json"}, body: JSON.stringify(articles)});
+  b.disabled = false;
+  m.textContent = r.error
+    ? "Refusé — " + r.error
+    : "Enregistré. Visible au prochain démarrage des launchers.";
+}
+
 const drop = document.getElementById("drop"), input = document.getElementById("file");
 drop.onclick = () => input.click();
 drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
@@ -228,7 +329,7 @@ async function upload(files) {
   loadFiles(); loadDiff();
 }
 
-function loadAll() { loadHealth(); loadDiff(); loadFiles(); loadStats(); }
+function loadAll() { loadHealth(); loadDiff(); loadFiles(); loadStats(); loadArticles(); }
 loadAll();
 </script>
 </body>

@@ -100,6 +100,70 @@ def diff() -> dict:
     }
 
 
+# ─── Annonces (/articles) ────────────────────────────────────────────────────
+#
+# Rien a voir avec la publication du pack : nginx sert www/articles.json en
+# direct et update.sh n'y touche pas. Une annonce enregistree est donc visible
+# des le prochain demarrage d'un launcher, sans republier les 220 Mo du pack.
+
+ARTICLES_MAX = 200
+ARTICLE_FIELDS = ("title", "content", "author", "publish_date")
+
+
+def articles_file() -> Path:
+    return ROOT / "www" / "articles.json"
+
+
+def articles_read() -> list[dict]:
+    f = articles_file()
+    if not f.exists():
+        return []
+    try:
+        data = json.loads(f.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+    return data if isinstance(data, list) else []
+
+
+def articles_write(data) -> str:
+    """Enregistre la liste complete. Retourne un message d'erreur, ou "" si
+    tout s'est bien passe."""
+    if not isinstance(data, list):
+        return "format attendu : une liste d'annonces"
+    if len(data) > ARTICLES_MAX:
+        return f"trop d'annonces (maximum {ARTICLES_MAX})"
+
+    clean = []
+    for i, a in enumerate(data, 1):
+        if not isinstance(a, dict):
+            return f"annonce {i} : objet attendu"
+        entry = {}
+        for k in ARTICLE_FIELDS:
+            v = a.get(k, "")
+            if not isinstance(v, str):
+                return f"annonce {i} : « {k} » doit être du texte"
+            entry[k] = v.strip()
+        if not entry["title"]:
+            return f"annonce {i} : le titre est obligatoire"
+        # home.js fait `new Date(publish_date)` puis lit le mois dans un
+        # tableau : une date absente ou libre afficherait « undefined » comme
+        # mois dans la vignette, sans la moindre erreur visible.
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", entry["publish_date"]):
+            return f"annonce {i} : date attendue au format AAAA-MM-JJ"
+        clean.append(entry)
+
+    f = articles_file()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    # Remplacement atomique : nginx sert ce fichier en permanence, une ecriture
+    # en place exposerait un JSON tronque au launcher qui demarre pile a cet
+    # instant — et getNews() echouerait sans rien dire d'utile au joueur.
+    tmp = f.with_name(f.name + ".tmp")
+    tmp.write_text(json.dumps(clean, indent=2, ensure_ascii=False) + "\n",
+                   encoding="utf-8")
+    os.replace(tmp, f)
+    return ""
+
+
 # ─── Statistiques, lues dans le journal d'acces nginx ────────────────────────
 
 LOG_RE = re.compile(
@@ -251,8 +315,27 @@ class Panel(BaseHTTPRequestHandler):
             self._json(stats())
         elif u.path == "/api/files":
             self._json(listing(q.get("path", [""])[0]))
+        elif u.path == "/api/articles":
+            self._json(articles_read())
         else:
             self._json({"error": "inconnu"}, 404)
+
+    def _body_json(self, default):
+        """Lit le corps de la requete en JSON. Retourne (valeur, erreur).
+
+        json.loads leve UnicodeDecodeError — et NON JSONDecodeError — sur des
+        octets qui ne sont pas de l'UTF-8. Non rattrapee, l'exception tue le
+        handler et le client ne recoit qu'une reponse vide, impossible a
+        diagnostiquer depuis le navigateur."""
+        size = int(self.headers.get("Content-Length", 0))
+        if size > 1024 * 1024:
+            return None, "contenu trop volumineux"
+        try:
+            return json.loads(self.rfile.read(size) or default), ""
+        except UnicodeDecodeError:
+            return None, "encodage invalide, UTF-8 attendu"
+        except json.JSONDecodeError:
+            return None, "JSON invalide"
 
     def do_POST(self):
         u = urlparse(self.path)
@@ -260,6 +343,13 @@ class Panel(BaseHTTPRequestHandler):
         if u.path == "/api/publish":
             code, out = run(["./update.sh"])
             self._json({"ok": code == 0, "output": out})
+        elif u.path == "/api/articles":
+            payload, err = self._body_json(b"[]")
+            if err:
+                self._json({"error": err}, 400)
+                return
+            err = articles_write(payload)
+            self._json({"error": err} if err else {"ok": True})
         elif u.path == "/api/upload":
             rel = q.get("path", [""])[0]
             target = safe_target(rel)
@@ -281,8 +371,10 @@ class Panel(BaseHTTPRequestHandler):
                     remaining -= len(chunk)
             self._json({"ok": True, "path": rel})
         elif u.path == "/api/delete":
-            size = int(self.headers.get("Content-Length", 0))
-            payload = json.loads(self.rfile.read(size) or b"{}")
+            payload, err = self._body_json(b"{}")
+            if err or not isinstance(payload, dict):
+                self._json({"error": err or "objet attendu"}, 400)
+                return
             target = safe_target(payload.get("path", ""))
             if not target or not target.exists():
                 self._json({"error": "chemin refusé ou inexistant"}, 400)
