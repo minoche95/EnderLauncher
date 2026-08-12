@@ -35,11 +35,20 @@ sur le serveur de jeu, il faut en créer un — un tunnel est lié à la machine
 
 | Route | Contenu |
 |---|---|
-| `/config` | réglages globaux : maintenance, thème, dossier de données |
+| `/config` | réglages globaux : maintenance, thème, dossier de données, `online` |
 | `/instances` | les instances : nom, loader, adresse du serveur, manifeste |
 | `/articles` | les actualités affichées à l'accueil |
 | `/files/<instance>.json` | la liste des fichiers, avec empreinte et taille |
 | `/pack/<instance>/…` | les fichiers eux-mêmes |
+
+### `online` n'est pas optionnel
+
+`login.js` teste `typeof config.online` : `true` affiche la connexion Microsoft,
+`false` la connexion hors-ligne, une URL bascule sur AZauth. **Si le champ est
+absent, aucune branche ne s'exécute** : le formulaire de connexion n'est jamais
+affiché, et le launcher reste sur l'image de fond — sans erreur, sans message,
+sans rien télécharger. Le symptôme ressemble à une panne réseau alors que tout
+l'index répond correctement.
 
 Le format du manifeste n'est pas un choix : `minecraft-java-core` attend
 exactement `{path, hash, size, url}` par entrée, et déduit le type du fichier du

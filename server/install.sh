@@ -375,6 +375,11 @@ mv "$TARGET/exclude.txt.new" "$TARGET/exclude.txt"
 
 # Un garde PAR FICHIER : tester config.json pour decider des trois laissait
 # /instances en 404 des qu'on ne regenerait que celui-la.
+#
+# "online" n'est PAS optionnel. login.js teste `typeof config.online` : booleen
+# -> Microsoft (true) ou hors-ligne (false), chaine -> AZauth. Absent, aucune
+# branche ne s'execute, le formulaire de connexion n'est jamais affiche et le
+# launcher reste sur l'image de fond sans la moindre erreur.
 if [ -f "$TARGET/www/config.json" ]; then
     note "config.json existant, conservé"
 else
@@ -387,6 +392,7 @@ cat > "$TARGET/www/config.json" <<CONFIGJSON
   "theme": "dark",
   "game_config": true,
   "java_config": true,
+  "online": true,
   "rss": ""
 }
 CONFIGJSON
