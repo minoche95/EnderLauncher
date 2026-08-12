@@ -64,6 +64,12 @@ compte. En conteneur il tournait en root et laissait derrière lui des fichiers
 que vous ne pouviez plus modifier. Et comme il a besoin de `bash`, `sha1sum` et
 `find`, déjà présents sur la machine, l'isolation n'apportait rien.
 
+Par défaut il n'écoute que sur `127.0.0.1`. `--panel-bind 0.0.0.0` le rend
+joignable depuis le réseau local, sans tunnel — pratique sur un réseau
+personnel, mais **le panneau n'a aucune authentification** : quiconque
+l'atteint peut publier ce qu'il veut chez tous les joueurs. À ne jamais
+exposer sur internet.
+
 ```bash
 systemctl --user status enderindex-panel     # état
 systemctl --user restart enderindex-panel    # après mise à jour de panel.py
