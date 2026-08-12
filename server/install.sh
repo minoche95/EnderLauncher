@@ -7,6 +7,8 @@
 #   ./install.sh --dir /srv/enderindex    installe ailleurs
 #   ./install.sh --port 8080              port d'écoute (défaut 8087)
 #   ./install.sh --public                 exposer sur toutes les interfaces
+#   ./install.sh --no-panel               sans le panneau de gestion
+#   ./install.sh --ref <commit>           version des fichiers du panneau
 #   ./install.sh --url https://index...   URL publique, écrite dans les manifestes
 #
 # Rejouable : index.conf, exclude.txt et les manifestes deja presents sont
@@ -24,6 +26,10 @@ PORT=8087
 PUBLIC_URL=""
 INSTANCE="EnderCraft"
 BIND="127.0.0.1:"   # derrière un tunnel, rien n'a besoin d'être exposé
+PANEL=1
+PANEL_PORT=8088
+REF="master"
+RAW="https://raw.githubusercontent.com/minoche95/EnderLauncher"
 
 die()  { printf '\n\033[31mErreur :\033[0m %s\n' "$*" >&2; exit 1; }
 step() { printf '\n\033[36m==>\033[0m \033[1m%s\033[0m\n' "$*"; }
@@ -36,6 +42,9 @@ while [ $# -gt 0 ]; do
         --url)      PUBLIC_URL="${2:?--url attend une URL}"; shift 2 ;;
         --instance) INSTANCE="${2:?--instance attend un nom}"; shift 2 ;;
         --public)   BIND=""; shift ;;
+        --no-panel) PANEL=0; shift ;;
+        --panel-port) PANEL_PORT="${2:?--panel-port attend un numéro}"; shift 2 ;;
+        --ref)      REF="${2:?--ref attend une référence git}"; shift 2 ;;
         -h|--help)  sed -n '2,15p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *)          die "option inconnue : $1" ;;
     esac
@@ -53,7 +62,7 @@ command -v sha1sum >/dev/null || die "sha1sum introuvable (paquet coreutils)."
 note "docker et sha1sum présents"
 
 step "Arborescence"
-mkdir -p "$TARGET/www/files" "$TARGET/pack/$INSTANCE"
+mkdir -p "$TARGET/www/files" "$TARGET/pack/$INSTANCE" "$TARGET/logs"
 note "$TARGET/pack/$INSTANCE/  ← déposer ici mods/, config/, kubejs/…"
 note "$TARGET/www/            ← servi par nginx, régénéré par update.sh"
 
@@ -93,6 +102,8 @@ services:
     volumes:
       - ./www:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Le journal alimente les statistiques du panneau.
+      - ./logs:/var/log/nginx
 COMPOSE
 
 cat > "$TARGET/nginx.conf" <<'NGINX'
@@ -100,6 +111,7 @@ server {
     listen 80;
     server_name _;
     root /usr/share/nginx/html;
+    access_log /var/log/nginx/access.log combined;
 
     # Le launcher demande /config, /instances et /articles sans extension.
     location = /config    { default_type application/json; try_files /config.json =404; }
@@ -124,6 +136,13 @@ server {
 NGINX
 note "nginx.conf et docker-compose.yml écrits"
 
+if [ "$PANEL" -eq 1 ]; then
+    for f in panel.py panel.html; do
+        curl -fsSL "$RAW/$REF/server/$f" -o "$TARGET/$f"             || die "téléchargement de $f impossible (ref $REF)"
+    done
+    note "panneau récupéré ($REF)"
+fi
+
 # ─── Scripts de gestion ──────────────────────────────────────────────────────
 
 install -m 755 /dev/stdin "$TARGET/update.sh" <<'UPDATE'
@@ -133,6 +152,10 @@ install -m 755 /dev/stdin "$TARGET/update.sh" <<'UPDATE'
 #   ./update.sh                    publie depuis pack/<instance>/
 #   ./update.sh --from /tmp/mc     publie depuis un autre dossier
 #   ./update.sh --dry-run          montre ce qui serait publie, sans rien ecrire
+#   ./update.sh --manifest         ecrit sur la sortie standard le manifeste qui
+#                                  SERAIT publie. Sert au panneau pour comparer
+#                                  a ce que les joueurs ont deja, sans dupliquer
+#                                  la logique d'exclusion.
 #
 # On filtre a la PUBLICATION, pas a la copie : deposez une instance entiere sans
 # trier, un oubli ne publiera jamais vos sauvegardes. Aucune dependance au-dela
@@ -143,10 +166,12 @@ cd "$(dirname "$0")"
 
 SRC="pack/$INSTANCE"
 DRY=0
+MANIFEST_ONLY=0
 while [ $# -gt 0 ]; do
     case "$1" in
-        --from)    SRC="${2:?--from attend un chemin}"; shift 2 ;;
-        --dry-run) DRY=1; shift ;;
+        --from)     SRC="${2:?--from attend un chemin}"; shift 2 ;;
+        --dry-run)  DRY=1; shift ;;
+        --manifest) MANIFEST_ONLY=1; shift ;;
         *) echo "option inconnue : $1" >&2; exit 1 ;;
     esac
 done
@@ -189,6 +214,20 @@ while IFS= read -r f; do
     rel="${f#"$SRC"/}"
     if excluded "$rel"; then skipped=$((skipped+1)); else echo "$rel" >> "$LIST"; kept=$((kept+1)); fi
 done < <(find "$SRC" -type f | sort)
+
+if [ "$MANIFEST_ONLY" -eq 1 ]; then
+    # On hache la source directement : rien n'est copie ni ecrit.
+    echo "["
+    first=1
+    while IFS= read -r rel; do
+        [ $first -eq 0 ] && echo ","
+        first=0
+        printf '  {"path": "%s", "hash": "%s", "size": %s, "url": "%s/pack/%s/%s"}'             "$rel" "$(sha1sum "$SRC/$rel" | cut -d' ' -f1)" "$(stat -c%s "$SRC/$rel")"             "$PUBLIC_URL" "$INSTANCE" "$rel"
+    done < "$LIST"
+    echo
+    echo "]"
+    exit 0
+fi
 
 if [ "$DRY" -eq 1 ]; then
     echo "$kept fichiers seraient publies, $skipped ecartes."

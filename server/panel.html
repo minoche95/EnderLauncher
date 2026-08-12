@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EnderCraft — index</title>
+<style>
+:root{--bg:#0f1115;--card:#171a21;--line:#252a34;--txt:#e6e8ec;--dim:#8b93a1;
+--ok:#39d353;--warn:#e3b341;--err:#f85149;--acc:#58a6ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);
+     font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:18px 24px;border-bottom:1px solid var(--line);
+       display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{font-size:17px;margin:0;font-weight:600}
+.pill{font-size:12px;padding:3px 9px;border-radius:20px;
+      border:1px solid var(--line);color:var(--dim)}
+.pill.ok{color:var(--ok);border-color:#1a4d2a}
+.pill.err{color:var(--err);border-color:#5c1e1c}
+main{padding:24px;max-width:1180px;margin:0 auto;display:grid;gap:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;
+         color:var(--dim);margin:0 0 10px;font-weight:600}
+.big{font-size:24px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);font-size:13px}
+th{color:var(--dim);font-weight:500;font-size:11px;text-transform:uppercase}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+button{background:#20262f;color:var(--txt);border:1px solid var(--line);
+       border-radius:7px;padding:7px 13px;cursor:pointer;font-size:13px}
+button:hover{border-color:var(--acc)}
+button:disabled{opacity:.4;cursor:default}
+button.primary{background:#1f6feb;border-color:#1f6feb}
+button.danger:hover{border-color:var(--err);color:var(--err)}
+a{color:var(--acc)}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.add{color:var(--ok)}.del{color:var(--err)}.chg{color:var(--warn)}
+.muted{color:var(--dim)}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+#drop{border:1.5px dashed var(--line);border-radius:9px;padding:22px;
+      text-align:center;color:var(--dim);cursor:pointer}
+#drop.over{border-color:var(--acc);color:var(--acc)}
+pre{background:#0b0d11;border:1px solid var(--line);border-radius:7px;padding:12px;
+    overflow:auto;max-height:280px;font-size:12px;margin:0;white-space:pre-wrap}
+.bar{height:5px;background:#0b0d11;border-radius:3px;overflow:hidden}
+.bar>div{height:100%;background:var(--acc)}
+.spark{display:flex;align-items:flex-end;gap:3px;height:52px}
+.spark>div{flex:1;background:#1f6feb;border-radius:2px 2px 0 0;min-height:2px}
+</style>
+</head>
+<body>
+<header>
+  <h1>EnderCraft — index du launcher</h1>
+  <span id="h-nginx" class="pill">…</span>
+  <span id="h-url" class="pill"></span>
+  <span style="flex:1"></span>
+  <button onclick="loadAll()">Rafraîchir</button>
+</header>
+
+<main>
+  <div class="grid" id="cards"></div>
+
+  <div class="card">
+    <h2>Publication</h2>
+    <div id="diff">Analyse…</div>
+    <div class="row" style="margin-top:12px">
+      <button class="primary" id="pub" onclick="publish()">Publier</button>
+      <button onclick="loadDiff()">Recalculer</button>
+      <span class="muted" id="pubmsg"></span>
+    </div>
+    <pre id="publog" style="margin-top:12px;display:none"></pre>
+  </div>
+
+  <div class="card">
+    <h2>Fichiers du pack</h2>
+    <div class="row" style="margin-bottom:10px"><span class="mono" id="crumbs"></span></div>
+    <div id="drop">Déposer des fichiers ici, ou cliquer pour choisir
+      <input type="file" id="file" multiple hidden></div>
+    <table style="margin-top:12px">
+      <thead><tr><th>Nom</th><th class="num">Taille</th>
+        <th class="num">Modifié</th><th></th></tr></thead>
+      <tbody id="files"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Activité — 14 derniers jours</h2>
+    <div id="stats">…</div>
+  </div>
+</main>
+
+<script>
+const fmtSize = b => b >= 1073741824 ? (b/1073741824).toFixed(2) + " Go"
+  : b >= 1048576 ? (b/1048576).toFixed(1) + " Mo"
+  : b >= 1024 ? (b/1024).toFixed(0) + " ko" : b + " o";
+const fmtDate = t => t ? new Date(t*1000).toLocaleString("fr-FR") : "—";
+const esc = s => String(s).replace(/[&<>"]/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let cwd = "mods";
+
+async function api(p, o) { const r = await fetch(p, o); return r.json(); }
+
+async function loadHealth() {
+  const h = await api("/api/health");
+  const n = document.getElementById("h-nginx");
+  n.textContent = h.nginx ? "nginx en ligne" : "nginx injoignable";
+  n.className = "pill " + (h.nginx ? "ok" : "err");
+  document.getElementById("h-url").textContent = h.public_url;
+  const used = 100 - Math.round(h.disk_free / h.disk_total * 100);
+  document.getElementById("cards").innerHTML =
+    '<div class="card"><h2>Publié</h2><div class="big">' + h.files + '</div>' +
+      '<div class="muted">' + fmtSize(h.size) + '</div></div>' +
+    '<div class="card"><h2>Dernière publication</h2><div style="font-size:15px">' +
+      fmtDate(h.published_at) + '</div></div>' +
+    '<div class="card"><h2>Instance</h2><div style="font-size:15px">' + esc(h.instance) +
+      '</div><div class="muted mono">port ' + esc(h.port) + '</div></div>' +
+    '<div class="card"><h2>Disque</h2><div class="big">' + fmtSize(h.disk_free) + '</div>' +
+      '<div class="muted">libre sur ' + fmtSize(h.disk_total) + '</div>' +
+      '<div class="bar" style="margin-top:7px"><div style="width:' + used + '%"></div></div></div>';
+}
+
+async function loadDiff() {
+  const d = document.getElementById("diff");
+  d.textContent = "Analyse…";
+  const r = await api("/api/diff");
+  if (r.error) { d.innerHTML = '<span class="del">' + esc(r.error) + '</span>'; return; }
+  const none = !r.added.length && !r.removed.length && !r.changed.length;
+  const list = (title, arr, cls) => arr.length
+    ? '<div style="margin-top:8px"><b class="' + cls + '">' + title + " (" + arr.length +
+      ')</b><div class="mono muted">' + arr.slice(0,25).map(esc).join("<br>") +
+      (arr.length > 25 ? "<br>… et " + (arr.length-25) + " autres" : "") + "</div></div>"
+    : "";
+  d.innerHTML = none
+    ? '<span class="muted">Aucun changement — les joueurs ont déjà ' + r.total +
+      " fichiers (" + fmtSize(r.size) + ").</span>"
+    : list("Ajoutés", r.added, "add") + list("Modifiés", r.changed, "chg") +
+      list("Supprimés", r.removed, "del") +
+      '<div class="muted" style="margin-top:10px">Après publication : ' + r.total +
+      " fichiers, " + fmtSize(r.size) + "</div>";
+  document.getElementById("pub").disabled = none;
+}
+
+async function loadFiles() {
+  const r = await api("/api/files?path=" + encodeURIComponent(cwd));
+  const parts = cwd.split("/").filter(Boolean);
+  let crumbs = '<a href="#" onclick="go(\'\');return false">pack</a>';
+  parts.forEach((p, i) => {
+    crumbs += ' / <a href="#" onclick="go(\'' + parts.slice(0, i+1).join("/") +
+              '\');return false">' + esc(p) + "</a>";
+  });
+  document.getElementById("crumbs").innerHTML = crumbs;
+  const here = cwd ? cwd + "/" : "";
+  document.getElementById("files").innerHTML = r.map(f =>
+    "<tr><td>" + (f.dir
+      ? '📁 <a href="#" onclick="go(\'' + here + f.name + '\');return false">' + esc(f.name) + "</a>"
+      : "📄 " + esc(f.name)) +
+    '</td><td class="num">' + (f.dir ? "" : fmtSize(f.size)) +
+    '</td><td class="num muted">' + fmtDate(f.mtime) +
+    '</td><td class="num"><button class="danger" onclick="del(\'' + here + f.name +
+    '\')">Supprimer</button></td></tr>'
+  ).join("") || '<tr><td colspan="4" class="muted">Dossier vide</td></tr>';
+}
+
+function go(p) { cwd = p; loadFiles(); }
+
+async function del(rel) {
+  if (!confirm("Supprimer " + rel + " ?\n\nIl disparaîtra chez tous les joueurs à la prochaine publication."))
+    return;
+  const r = await api("/api/delete", {method: "POST",
+    headers: {"Content-Type": "application/json"}, body: JSON.stringify({path: rel})});
+  if (r.error) alert(r.error);
+  loadFiles(); loadDiff();
+}
+
+async function publish() {
+  const b = document.getElementById("pub"), m = document.getElementById("pubmsg");
+  b.disabled = true; m.textContent = "Publication…";
+  const r = await api("/api/publish", {method: "POST"});
+  m.textContent = r.ok ? "Publié." : "Échec.";
+  const log = document.getElementById("publog");
+  log.style.display = "block"; log.textContent = r.output;
+  loadHealth(); loadDiff();
+}
+
+async function loadStats() {
+  const s = await api("/api/stats"), el = document.getElementById("stats");
+  if (!s.available) {
+    el.innerHTML = '<span class="muted">Aucun journal d\'accès trouvé. ' +
+      "Relancez la stack pour activer la journalisation.</span>";
+    return;
+  }
+  const max = Math.max(1, ...s.series.map(d => d.launches));
+  el.innerHTML =
+    '<div class="grid" style="margin-bottom:14px">' +
+      '<div><div class="big">' + s.launches + '</div><div class="muted">lancements</div></div>' +
+      '<div><div class="big">' + Math.max(0, ...s.series.map(d => d.clients)) +
+        '</div><div class="muted">clients/jour (max)</div></div>' +
+      '<div><div class="big">' + fmtSize(s.bytes) + '</div><div class="muted">transférés</div></div>' +
+      '<div><div class="big ' + (s.errors ? "del" : "") + '">' + s.errors +
+        '</div><div class="muted">erreurs</div></div>' +
+    '</div><div class="spark">' +
+    s.series.map(d => '<div style="height:' + Math.round(d.launches/max*100) +
+      '%" title="' + d.day + " — " + d.launches + " lancements, " + d.clients +
+      ' clients"></div>').join("") + "</div>" +
+    (s.series.length ? '<div class="muted" style="font-size:11px;margin-top:5px">' +
+      s.series[0].day + " → " + s.series[s.series.length-1].day + "</div>" : "") +
+    '<table style="margin-top:16px"><thead><tr><th>Fichiers les plus téléchargés</th>' +
+    '<th class="num">Fois</th></tr></thead><tbody>' +
+    s.top.map(t => '<tr><td class="mono">' + esc(t[0]) + '</td><td class="num">' +
+      t[1] + "</td></tr>").join("") + "</tbody></table>";
+}
+
+const drop = document.getElementById("drop"), input = document.getElementById("file");
+drop.onclick = () => input.click();
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); upload(e.dataTransfer.files); };
+input.onchange = () => upload(input.files);
+
+async function upload(files) {
+  for (const f of files) {
+    drop.textContent = "Envoi de " + f.name + "…";
+    await fetch("/api/upload?path=" + encodeURIComponent((cwd ? cwd + "/" : "") + f.name),
+                {method: "POST", body: f});
+  }
+  drop.textContent = "Déposer des fichiers ici, ou cliquer pour choisir";
+  loadFiles(); loadDiff();
+}
+
+function loadAll() { loadHealth(); loadDiff(); loadFiles(); loadStats(); }
+loadAll();
+</script>
+</body>
+</html>

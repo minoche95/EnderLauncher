@@ -46,6 +46,38 @@ exactement `{path, hash, size, url}` par entrée, et déduit le type du fichier 
 premier segment de son chemin. Le champ s'appelle bien `hash` côté serveur —
 la bibliothèque le relit en `sha1`.
 
+## Le panneau de gestion
+
+Une interface web pour ajouter ou retirer des mods, voir l'état du service et
+suivre l'activité. **Jamais exposée** — c'est elle qui décide de ce que tous les
+joueurs téléchargent. On y accède par tunnel SSH :
+
+```bash
+ssh -L 8088:127.0.0.1:8088 minoche@serveur
+```
+
+puis `http://localhost:8088`.
+
+| | |
+|---|---|
+| **État** | nginx en ligne, date de la dernière publication, nombre de fichiers, espace disque |
+| **Publication** | diff avant d'agir — ajoutés, modifiés, supprimés — puis publication en un clic |
+| **Fichiers** | navigation, dépôt par glisser-déposer, suppression |
+| **Activité** | lancements par jour, clients uniques, volume transféré, fichiers les plus téléchargés |
+
+Le diff est le garde-fou qui manquait : sans lui, rien n'empêche de publier
+200 fichiers en trop sans s'en apercevoir avant que les joueurs les récupèrent.
+
+Il n'invente rien sur ce qui sera publié : il appelle `./update.sh --manifest`,
+qui applique exactement les mêmes exclusions que la publication réelle. Dupliquer
+cette logique serait le meilleur moyen de la faire diverger un jour.
+
+Les statistiques viennent du journal d'accès nginx, pas d'une télémétrie : le
+launcher demande `/instances` à chaque démarrage, ce qui donne un compte de
+lancements fidèle sans rien installer chez le joueur.
+
+`--no-panel` pour s'en passer, `--panel-port` pour changer de port.
+
 ## Publier une mise à jour
 
 1. Déposer le contenu du pack client dans `pack/EnderCraft/` — exactement ce
