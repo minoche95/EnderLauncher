@@ -470,6 +470,60 @@ code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/config" ||
 [ "$code" = "200" ] || die "le service ne répond pas sur le port $PORT (code $code)."
 note "nginx répond sur le port $PORT"
 
+# Remise en route apres un redemarrage de la machine.
+#
+# `restart: unless-stopped` ne suffit pas : une politique de redemarrage ne
+# s'applique qu'a un conteneur qui EXISTE encore. Apres un `docker compose
+# down`, ou apres un `docker stop` que la politique respecte precisement, rien
+# ne relance le service au boot — l'index reste muet et le launcher affiche
+# « aucune connexion » a tous les joueurs.
+#
+# D'ou cette unite : elle rejoue `docker compose up -d` au demarrage, ce qui
+# recree le conteneur s'il a disparu et le relance s'il etait arrete. Unite
+# utilisateur, comme le panneau : le lingering active plus haut la fait
+# demarrer sans ouvrir de session, et aucun sudo n'est requis.
+STACK_UNIT="$HOME/.config/systemd/user/enderindex-stack.service"
+mkdir -p "$(dirname "$STACK_UNIT")"
+cat > "$STACK_UNIT" <<STACKUNIT
+[Unit]
+Description=Pile nginx de l'index EnderCraft
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=$TARGET
+ExecStart=$(command -v docker) compose up -d
+ExecStop=$(command -v docker) compose stop
+# Le demon Docker peut n'etre pas encore pret quand systemd lance l'unite.
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+STACKUNIT
+
+if systemctl --user daemon-reload 2>/dev/null; then
+    systemctl --user enable enderindex-stack.service >/dev/null 2>&1 \
+        && note "enderindex-stack activé — la pile repart au démarrage" \
+        || note "unité écrite, à activer : systemctl --user enable enderindex-stack"
+    loginctl enable-linger "$USER" >/dev/null 2>&1 \
+        || note "lingering refusé : sudo loginctl enable-linger $USER"
+else
+    note "systemd utilisateur indisponible — la pile ne repartira pas seule"
+fi
+
+# Docker lui-meme doit demarrer au boot, sinon tout ce qui precede est vain.
+if command -v systemctl >/dev/null; then
+    if systemctl is-enabled docker >/dev/null 2>&1; then
+        note "docker est activé au démarrage"
+    else
+        note "ATTENTION : docker n'est pas activé au démarrage"
+        note "  corrigez avec : sudo systemctl enable --now docker"
+    fi
+fi
+
 step "Terminé"
 printf '
     1. Déposez le contenu du pack client dans :
