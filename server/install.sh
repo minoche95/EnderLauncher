@@ -362,6 +362,11 @@ LISEZ-MOI.txt
 *.log
 *.log.gz
 *.tmp
+
+# Sauvegardes de configuration ecrites par NeoForge quand un fichier .toml
+# change de schema. Elles apparaissent toutes seules dans config/ et n'ont
+# aucune raison de partir chez les joueurs.
+*.bak
 EXCLUDE
 if [ -f "$TARGET/exclude.txt" ] && ! cmp -s "$TARGET/exclude.txt" "$TARGET/exclude.txt.new"; then
     cp "$TARGET/exclude.txt" "$TARGET/exclude.txt.bak"
