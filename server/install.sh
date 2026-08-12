@@ -229,10 +229,7 @@ echo "  manifeste : $PUBLIC_URL/files/$INSTANCE.json"
 UPDATE
 note "update.sh installé"
 
-if [ -f "$TARGET/exclude.txt" ]; then
-    note "exclude.txt existant, conservé"
-else
-cat > "$TARGET/exclude.txt" <<'EXCLUDE'
+cat > "$TARGET/exclude.txt.new" <<'EXCLUDE'
 # Ce que l'index ne publie JAMAIS. Convention .gitignore :
 #   /nom/   ancre a la racine        nom/   ce dossier a tout niveau
 #   *.ext   nom de fichier, partout
@@ -266,6 +263,10 @@ cat > "$TARGET/exclude.txt" <<'EXCLUDE'
 /dynamic-data-pack-cache/
 .cache/
 
+# Propre a cette machine, ou sans valeur pour un joueur
+/command_history.txt
+/icon.png
+
 # Metadonnees de Prism et outils de distribution
 /mods/.index/
 /instance.cfg
@@ -279,8 +280,13 @@ LISEZ-MOI.txt
 *.log.gz
 *.tmp
 EXCLUDE
-note "exclude.txt écrit — c'est lui qui filtre la publication"
+if [ -f "$TARGET/exclude.txt" ] && ! cmp -s "$TARGET/exclude.txt" "$TARGET/exclude.txt.new"; then
+    cp "$TARGET/exclude.txt" "$TARGET/exclude.txt.bak"
+    note "exclude.txt mis à jour — ancienne version dans exclude.txt.bak"
+else
+    note "exclude.txt écrit — c'est lui qui filtre la publication"
 fi
+mv "$TARGET/exclude.txt.new" "$TARGET/exclude.txt"
 
 # ─── Manifestes de départ ────────────────────────────────────────────────────
 
