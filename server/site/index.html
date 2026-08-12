@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EnderCraft — Télécharger le launcher</title>
+<meta name="description" content="Launcher officiel du serveur EnderCraft. Windows, macOS et Linux.">
+<style>
+/* Aucune ressource externe : ni police, ni script, ni image distante. La page
+   se charge d'un bloc et ne dépend de personne. */
+:root{
+  --bg:#0b0c11; --surface:#15171f; --surface-hi:#1c1f2a;
+  --line:rgba(255,255,255,.08); --line-hi:rgba(255,255,255,.16);
+  --txt:#eceef4; --dim:#9aa0b4; --faint:#868ca0;
+  --accent:#7c5cff; --accent-hi:#9d7bff; --accent-lo:#5b3cff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; background:var(--bg); color:var(--txt);
+  font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column; align-items:center;
+  padding:0 20px 60px;
+}
+body::before{
+  content:''; position:fixed; top:-320px; left:50%; transform:translateX(-50%);
+  width:900px; height:640px; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle,rgba(124,92,255,.16) 0%,transparent 70%);
+}
+main{width:100%; max-width:880px; position:relative}
+header{text-align:center; padding:72px 0 40px}
+h1{margin:0; font-size:clamp(2rem,6vw,3rem); font-weight:700; letter-spacing:-.03em}
+.tag{
+  display:inline-block; margin-bottom:18px; padding:5px 14px; border-radius:999px;
+  background:rgba(124,92,255,.14); color:var(--accent-hi);
+  font-size:.78rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+}
+.lede{margin:14px auto 0; max-width:520px; color:var(--dim)}
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px}
+.card{
+  background:var(--surface); border:1px solid var(--line); border-radius:18px;
+  padding:26px 22px; display:flex; flex-direction:column; gap:14px;
+  transition:border-color .16s ease, transform .16s ease;
+}
+.card:hover{border-color:var(--line-hi); transform:translateY(-2px)}
+.os{font-size:1.05rem; font-weight:600; letter-spacing:-.01em}
+.os small{display:block; margin-top:3px; color:var(--faint); font-size:.8rem; font-weight:400}
+.dl{
+  margin-top:auto; display:block; padding:13px 18px; border-radius:12px;
+  background:linear-gradient(135deg,var(--accent-hi),var(--accent-lo));
+  color:#fff; text-decoration:none; text-align:center; font-weight:600;
+  box-shadow:0 6px 20px rgba(124,92,255,.34);
+  transition:filter .16s ease, transform .16s ease;
+}
+.dl:hover{filter:brightness(1.08); transform:translateY(-1px)}
+.alt{margin:0; font-size:.8rem; text-align:center}
+.alt a{color:var(--faint); text-decoration:none; border-bottom:1px solid var(--line-hi)}
+.alt a:hover{color:var(--accent-hi)}
+.panel{
+  margin-top:40px; background:var(--surface); border:1px solid var(--line);
+  border-radius:18px; padding:26px 24px;
+}
+.panel h2{margin:0 0 16px; font-size:.76rem; font-weight:600; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--faint)}
+ol{margin:0; padding-left:20px; color:var(--dim)}
+ol li{margin-bottom:8px}
+ol li:last-child{margin-bottom:0}
+.addr{
+  margin-top:22px; display:flex; align-items:center; justify-content:space-between;
+  gap:14px; flex-wrap:wrap;
+  background:var(--surface-hi); border:1px solid var(--line);
+  border-radius:12px; padding:14px 16px;
+}
+.addr span{color:var(--faint); font-size:.82rem}
+.addr code{
+  font-family:ui-monospace,Consolas,monospace; font-size:1rem;
+  color:var(--accent-hi); font-weight:600;
+}
+footer{margin-top:36px; text-align:center; color:var(--faint); font-size:.8rem}
+footer a{color:var(--faint)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="tag">Serveur moddé · 1.21.1</div>
+    <h1>EnderCraft</h1>
+    <p class="lede">
+      Le launcher installe le modpack, le tient à jour et vous connecte au
+      serveur. Rien d'autre à télécharger.
+    </p>
+  </header>
+
+  <!-- Les liens pointent sur /releases/latest/download/ : GitHub redirige
+       toujours vers la dernière version publiée, il n'y a donc rien à
+       regénérer ici à chaque sortie. -->
+  <div class="grid">
+    <div class="card">
+      <div class="os">Windows<small>64 bits — le cas courant</small></div>
+      <a class="dl" href="https://github.com/minoche95/EnderLauncher/releases/latest/download/Ender-Launcher-win-x64.exe">Télécharger</a>
+      <p class="alt"><a href="https://github.com/minoche95/EnderLauncher/releases/latest/download/Ender-Launcher-win-arm64.exe">Version ARM64</a></p>
+    </div>
+
+    <div class="card">
+      <div class="os">macOS<small>Intel et Apple Silicon</small></div>
+      <a class="dl" href="https://github.com/minoche95/EnderLauncher/releases/latest/download/Ender-Launcher-mac-universal.dmg">Télécharger</a>
+      <p class="alt"><a href="https://github.com/minoche95/EnderLauncher/releases/latest/download/Ender-Launcher-mac-universal.zip">Archive .zip</a></p>
+    </div>
+
+    <div class="card">
+      <div class="os">Linux<small>AppImage, aucune installation</small></div>
+      <a class="dl" href="https://github.com/minoche95/EnderLauncher/releases/latest/download/Ender-Launcher-linux-x86_64.AppImage">Télécharger</a>
+      <p class="alt"><a href="https://github.com/minoche95/EnderLauncher/releases/latest">Toutes les versions</a></p>
+    </div>
+  </div>
+
+  <section class="panel">
+    <h2>Premiers pas</h2>
+    <ol>
+      <li>Téléchargez le launcher et lancez-le.</li>
+      <li>Connectez-vous avec votre compte Microsoft.</li>
+      <li>Cliquez sur <strong>Jouer</strong> : le modpack se télécharge tout seul.</li>
+    </ol>
+    <div class="addr">
+      <span>Adresse du serveur, déjà enregistrée dans le launcher</span>
+      <code>play.enderhost.info</code>
+    </div>
+  </section>
+
+  <footer>
+    Un compte Minecraft Java valide est requis.<br>
+    <a href="https://github.com/minoche95/EnderLauncher/releases">Notes de version</a>
+  </footer>
+</main>
+</body>
+</html>

@@ -117,6 +117,12 @@ server {
     root /usr/share/nginx/html;
     access_log /var/log/nginx/access.log combined;
 
+    # Page publique de telechargement du launcher. Servie par le meme nginx que
+    # l'index, donc elle herite du service enderindex-stack qui repart au boot :
+    # aucun second service a installer.
+    index index.html;
+    location = /          { try_files /index.html =404; }
+
     # Le launcher demande /config, /instances et /articles sans extension.
     location = /config    { default_type application/json; try_files /config.json =404; }
     location = /instances { default_type application/json; try_files /instances.json =404; }
@@ -462,6 +468,16 @@ print("    " + (", ".join(wrote) + " ecrits" if wrote
                 else "instances.json et articles.json existants, conserves"))
 PYINST
 note "instances.json et articles.json : écrits s'ils manquaient"
+
+# ─── Page publique de telechargement ────────────────────────────────────────
+
+# Recuperee comme le panneau, et jamais regeneree par update.sh : celui-ci
+# n'ecrit que dans www/pack/ et www/files/.
+if curl -fsSL "$RAW/$REF/server/site/index.html" -o "$TARGET/www/index.html"; then
+    note "page de téléchargement écrite dans www/index.html"
+else
+    note "page de téléchargement indisponible (ref $REF) — sans conséquence"
+fi
 
 step "Démarrage"
 ( cd "$TARGET" && docker compose up -d ) >/dev/null 2>&1 || die "docker compose a échoué."
