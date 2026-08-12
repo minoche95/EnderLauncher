@@ -243,6 +243,8 @@ cat > "$TARGET/exclude.txt.new" <<'EXCLUDE'
 /backups/
 /usercache.json
 /usernamecache.json
+/local/
+/fancymenu_data/
 /realms_persistence.json
 /servers.dat
 /servers.dat_old
@@ -321,8 +323,22 @@ instances = {
             "minecraft_version": "1.21.1",
         },
         "verify": True,
-        "ignored": ["options.txt", "optionsof.txt", "servers.dat",
-                    "config/fancymenu/customizablemenus.txt"],
+        # `ignored` protege de la SUPPRESSION, pas seulement de l'ecrasement.
+        # checkFiles supprime tout fichier de l'instance absent du manifeste ET
+        # d'ignored. Sans cette liste, chaque lancement effacerait les mondes
+        # solo, les captures et la carte FTB Chunks du joueur.
+        "ignored": [
+            # Ce que le joueur cree
+            "saves", "screenshots", "backups", "logs", "crash-reports",
+            "local",            # carte et waypoints FTB Chunks, reglages KubeJS
+            "fancymenu_data",   # dernier monde ouvert
+            "schematics", "journeymap", "xaero",
+            # Ses reglages : pousses une fois, jamais ecrases ensuite
+            "options.txt", "optionsof.txt",
+            "servers.dat", "servers.dat_old",
+            "usercache.json", "usernamecache.json", "realms_persistence.json",
+            "config/fancymenu/customizablemenus.txt",
+        ],
         "jvm_args": [], "game_args": [],
         "whitelistActive": False, "whitelist": [],
         "status": {"nameServer": inst, "ip": "play.enderhost.info", "port": 25565},

@@ -58,6 +58,23 @@ C'est tout. Nginx sert des fichiers statiques et le launcher relit le manifeste
 `update.sh` recalcule toutes les empreintes. Un joueur ne retélécharge que ce
 qui a changé, puisque le launcher compare taille puis SHA-1 avant d'agir.
 
+## `ignored` protège de la SUPPRESSION, pas seulement de l'écrasement
+
+C'est le point le plus important de toute la configuration.
+
+`checkFiles` supprime **tout fichier de l'instance absent du manifeste et
+d'`ignored`**. C'est ce qui garantit qu'un joueur ne peut pas glisser un xray —
+mais sans une liste correcte, chaque lancement effacerait aussi ses mondes solo,
+ses captures et sa carte FTB Chunks.
+
+D'où les 18 entrées d'`instances.json` : `saves`, `screenshots`, `backups`,
+`logs`, `crash-reports`, `local` (carte et waypoints FTB Chunks), `fancymenu_data`,
+et les fichiers de réglages.
+
+**Toute donnée créée par le joueur doit y figurer.** Si vous ajoutez un mod qui
+écrit hors de `config/` — un mod de carte, de schémas, de statistiques — pensez
+à ajouter son dossier, sinon vos joueurs le perdront à chaque démarrage.
+
 ## Les fichiers qu'on ne doit pas écraser
 
 `ignored` dans `instances.json` liste ce que le launcher laisse tranquille une
