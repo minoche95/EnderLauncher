@@ -162,13 +162,23 @@ def health() -> dict:
     man = ROOT / "www" / "files" / f"{inst}.json"
     du = shutil.disk_usage(ROOT)
 
+    # En conteneur, 127.0.0.1 designe la boucle locale du PANNEAU, pas nginx.
+    # On essaie donc le nom du service docker d'abord, puis l'hote local pour le
+    # cas d'une execution directe sans conteneur.
+    import urllib.request
     nginx = False
-    try:
-        import urllib.request
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/config", timeout=4) as r:
-            nginx = r.status == 200
-    except Exception:
-        pass
+    for url in (os.environ.get("NGINX_URL"),
+                "http://enderindex/config",
+                f"http://127.0.0.1:{port}/config"):
+        if not url:
+            continue
+        try:
+            with urllib.request.urlopen(url, timeout=4) as r:
+                if r.status == 200:
+                    nginx = True
+                    break
+        except Exception:
+            continue
 
     pub = published()
     return {

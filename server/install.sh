@@ -122,6 +122,9 @@ cat >> "$TARGET/docker-compose.yml" <<PANELSVC
       ENDERINDEX_ROOT: /srv
       PANEL_PORT: "$PANEL_PORT"
       PANEL_BIND: "0.0.0.0"
+      # Nom du service, pas 127.0.0.1 : dans le conteneur du panneau, la boucle
+      # locale est la sienne et nginx y est injoignable.
+      NGINX_URL: "http://enderindex/config"
     ports:
       - "127.0.0.1:$PANEL_PORT:$PANEL_PORT"
     volumes:
