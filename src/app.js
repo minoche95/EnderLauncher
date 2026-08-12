@@ -82,10 +82,10 @@ ipcMain.handle('update-app', async () => {
         autoUpdater.checkForUpdates().then(res => {
             resolve(res);
         }).catch(error => {
-            reject({
-                error: true,
-                message: error
-            })
+            // On rejette une vraie Error, avec un message lisible : un objet
+            // nu traverse l'IPC en « [object Object] », ce qui ne dit rien de
+            // la panne — ni au joueur, ni a nous.
+            reject(new Error(error?.message || String(error)));
         })
     })
 })

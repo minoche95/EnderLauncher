@@ -54,7 +54,16 @@ class Splash {
         this.setStatus(`Recherche de mise à jour...`);
 
         ipcRenderer.invoke('update-app').then().catch(err => {
-            return this.shutdown(`erreur lors de la recherche de mise à jour :<br>${err.message}`);
+            // Echec de la recherche de mise a jour : on CONTINUE.
+            //
+            // Cette branche appelait shutdown(), donc un simple accroc reseau
+            // vers GitHub — ou une panne de GitHub — empechait de jouer, alors
+            // que le pack, lui, vient de notre propre index. Refuser le jeu
+            // parce qu'on n'a pas pu verifier une mise a jour du launcher est
+            // hors de proportion.
+            console.error('Recherche de mise à jour impossible :', err?.message || err);
+            this.setStatus(`Mise à jour indisponible, démarrage...`);
+            this.maintenanceCheck();
         });
 
         ipcRenderer.on('updateAvailable', () => {
@@ -67,7 +76,12 @@ class Splash {
         })
 
         ipcRenderer.on('error', (event, err) => {
-            if (err) return this.shutdown(`${err.message}`);
+            // Meme raisonnement : un telechargement de mise a jour qui echoue
+            // ne doit pas empecher de jouer avec la version deja installee.
+            if (!err) return;
+            console.error('Mise à jour du launcher impossible :', err?.message || err);
+            this.setStatus(`Mise à jour impossible, démarrage...`);
+            this.maintenanceCheck();
         })
 
         ipcRenderer.on('download-progress', (event, progress) => {
