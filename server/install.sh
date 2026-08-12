@@ -106,6 +106,29 @@ services:
       - ./logs:/var/log/nginx
 COMPOSE
 
+if [ "$PANEL" -eq 1 ]; then
+cat >> "$TARGET/docker-compose.yml" <<PANELSVC
+
+  # Panneau de gestion. Publie sur la boucle locale de l'HOTE uniquement : il
+  # decide de ce que tous les joueurs telechargent. On y accede par tunnel SSH.
+  # Image slim et non alpine : update.sh a besoin de bash, sha1sum et find.
+  panel:
+    image: python:3.12-slim
+    container_name: enderindex-panel
+    restart: unless-stopped
+    working_dir: /srv
+    command: python3 /srv/panel.py
+    environment:
+      ENDERINDEX_ROOT: /srv
+      PANEL_PORT: "$PANEL_PORT"
+      PANEL_BIND: "0.0.0.0"
+    ports:
+      - "127.0.0.1:$PANEL_PORT:$PANEL_PORT"
+    volumes:
+      - ./:/srv
+PANELSVC
+fi
+
 cat > "$TARGET/nginx.conf" <<'NGINX'
 server {
     listen 80;
