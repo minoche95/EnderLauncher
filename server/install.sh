@@ -9,6 +9,9 @@
 #   ./install.sh --public                 exposer sur toutes les interfaces
 #   ./install.sh --url https://index...   URL publique, écrite dans les manifestes
 #
+# Rejouable : index.conf, exclude.txt et les manifestes deja presents sont
+# conserves. C'est donc aussi la facon de mettre a jour update.sh.
+#
 # Conçu pour cohabiter avec Crafty : c'est un conteneur nginx indépendant, sur
 # son propre port, qui ne touche ni aux volumes ni au réseau de Crafty. Les
 # fichiers du pack se déposent dans pack/<instance>/ et `update.sh` régénère
@@ -56,6 +59,9 @@ note "$TARGET/www/            ← servi par nginx, régénéré par update.sh"
 
 # ─── Réglages, relus par update.sh ───────────────────────────────────────────
 
+if [ -f "$TARGET/index.conf" ]; then
+    note "index.conf existant, conservé"
+else
 cat > "$TARGET/index.conf" <<CONF
 # Réglages de l'index. Modifiables à chaud : update.sh les relit à chaque appel.
 PUBLIC_URL=$PUBLIC_URL
@@ -68,6 +74,7 @@ PORT=$PORT
 IGNORED=options.txt,optionsof.txt,servers.dat,config/fancymenu/customizablemenus.txt
 CONF
 note "index.conf écrit"
+fi
 
 # ─── nginx ───────────────────────────────────────────────────────────────────
 
@@ -121,46 +128,140 @@ note "nginx.conf et docker-compose.yml écrits"
 
 install -m 755 /dev/stdin "$TARGET/update.sh" <<'UPDATE'
 #!/usr/bin/env bash
-# Régénère l'index depuis pack/. À lancer après chaque modification de mods,
-# de config ou de scripts. Aucun redémarrage nécessaire : nginx sert des
-# fichiers, et le launcher relit le manifeste à chaque démarrage.
+# Regenere l'index depuis pack/, en ecartant ce que exclude.txt designe.
+#
+#   ./update.sh                    publie depuis pack/<instance>/
+#   ./update.sh --from /tmp/mc     publie depuis un autre dossier
+#   ./update.sh --dry-run          montre ce qui serait publie, sans rien ecrire
+#
+# On filtre a la PUBLICATION, pas a la copie : deposez une instance entiere sans
+# trier, un oubli ne publiera jamais vos sauvegardes. Aucune dependance au-dela
+# de find et sha1sum, presents partout.
 set -euo pipefail
 cd "$(dirname "$0")"
 . ./index.conf
 
 SRC="pack/$INSTANCE"
+DRY=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --from)    SRC="${2:?--from attend un chemin}"; shift 2 ;;
+        --dry-run) DRY=1; shift ;;
+        *) echo "option inconnue : $1" >&2; exit 1 ;;
+    esac
+done
 [ -d "$SRC" ] || { echo "Dossier $SRC introuvable." >&2; exit 1; }
+
+# Motifs, commentaires et lignes vides retires.
+mapfile -t PATTERNS < <(grep -vE '^\s*(#|$)' exclude.txt || true)
+
+# Un motif finissant par / ecarte tout un sous-arbre ; sinon il est confronte au
+# chemin complet ET au seul nom de fichier, ce qui rend `*.log` naturel.
+excluded() {
+    local rel="$1" pat
+    for pat in "${PATTERNS[@]}"; do
+        case "$pat" in
+            */) [ "${rel}/" = "$pat" ] && return 0
+                case "$rel/" in "$pat"*) return 0 ;; esac
+                case "$rel" in *"/${pat%/}/"*) return 0 ;; esac ;;
+            *)  case "$rel" in $pat) return 0 ;; esac
+                case "${rel##*/}" in $pat) return 0 ;; esac ;;
+        esac
+    done
+    return 1
+}
+
+kept=0; skipped=0
+LIST=$(mktemp); trap 'rm -f "$LIST"' EXIT
+while IFS= read -r f; do
+    rel="${f#"$SRC"/}"
+    if excluded "$rel"; then skipped=$((skipped+1)); else echo "$rel" >> "$LIST"; kept=$((kept+1)); fi
+done < <(find "$SRC" -type f | sort)
+
+if [ "$DRY" -eq 1 ]; then
+    echo "$kept fichiers seraient publies, $skipped ecartes."
+    echo "--- ecartes ---"
+    while IFS= read -r f; do rel="${f#"$SRC"/}"; excluded "$rel" && echo "  $rel"; done         < <(find "$SRC" -type f | sort) | head -40
+    exit 0
+fi
 
 mkdir -p www/files www/pack
 rm -rf "www/pack/$INSTANCE"
-cp -a "$SRC" "www/pack/$INSTANCE"
+while IFS= read -r rel; do
+    mkdir -p "www/pack/$INSTANCE/$(dirname "$rel")"
+    cp -p "$SRC/$rel" "www/pack/$INSTANCE/$rel"
+done < "$LIST"
 
-# Manifeste : un objet par fichier, chemin relatif à l'instance.
+# Manifeste : un objet par fichier, chemin relatif a l'instance.
 # `hash` est bien le nom attendu — minecraft-java-core le relit en `sha1`.
 {
   echo "["
   first=1
-  find "www/pack/$INSTANCE" -type f | sort | while read -r f; do
-      rel="${f#www/pack/$INSTANCE/}"
+  while IFS= read -r rel; do
+      f="www/pack/$INSTANCE/$rel"
       [ $first -eq 0 ] && echo ","
       first=0
-      printf '  {"path": "%s", "hash": "%s", "size": %s, "url": "%s/pack/%s/%s"}' \
-          "$rel" "$(sha1sum "$f" | cut -d' ' -f1)" "$(stat -c%s "$f")" \
-          "$PUBLIC_URL" "$INSTANCE" "$rel"
-  done
+      printf '  {"path": "%s", "hash": "%s", "size": %s, "url": "%s/pack/%s/%s"}'           "$rel" "$(sha1sum "$f" | cut -d' ' -f1)" "$(stat -c%s "$f")"           "$PUBLIC_URL" "$INSTANCE" "$rel"
+  done < "$LIST"
   echo
   echo "]"
 } > "www/files/$INSTANCE.json"
 
-n=$(grep -c '"path"' "www/files/$INSTANCE.json" || true)
-total=$(du -sh "www/pack/$INSTANCE" | cut -f1)
-echo "Index régénéré : $n fichiers, $total"
+echo "Index regenere : $kept fichiers publies, $skipped ecartes, $(du -sh "www/pack/$INSTANCE" | cut -f1)"
+du -sh "www/pack/$INSTANCE"/* 2>/dev/null | sort -rh | head -6 | sed 's/^/  /'
 echo "  manifeste : $PUBLIC_URL/files/$INSTANCE.json"
 UPDATE
 note "update.sh installé"
 
+if [ -f "$TARGET/exclude.txt" ]; then
+    note "exclude.txt existant, conservé"
+else
+cat > "$TARGET/exclude.txt" <<'EXCLUDE'
+# Ce que l'index ne publie JAMAIS. Syntaxe rsync : un motif par ligne.
+# Vous pouvez donc deposer une instance Prism entiere dans pack/ sans trier.
+
+# Propre au joueur, ou sans valeur pour lui
+saves/
+logs/
+crash-reports/
+screenshots/
+backups/
+usercache.json
+usernamecache.json
+realms_persistence.json
+servers.dat*
+.fabric/
+.mixin.out/
+
+# Gere par le launcher lui-meme, jamais a distribuer
+versions/
+libraries/
+assets/
+natives/
+runtime/
+downloads/
+
+# Metadonnees de Prism et outils de distribution
+mods/.index/
+fetch-extras.*
+LISEZ-MOI.txt
+*.md
+instance.cfg
+mmc-pack.json
+
+# Journaux et fichiers temporaires
+*.log
+*.log.gz
+*.tmp
+EXCLUDE
+note "exclude.txt écrit — c'est lui qui filtre la publication"
+fi
+
 # ─── Manifestes de départ ────────────────────────────────────────────────────
 
+if [ -f "$TARGET/www/config.json" ]; then
+    note "manifestes existants, conservés"
+else
 cat > "$TARGET/www/config.json" <<CONFIGJSON
 {
   "maintenance": false,
@@ -205,6 +306,7 @@ open(f"{target}/www/articles.json", "w", encoding="utf-8").write(
                indent=2, ensure_ascii=False) + "\n")
 PYINST
 note "config.json, instances.json et articles.json écrits"
+fi
 
 step "Démarrage"
 ( cd "$TARGET" && docker compose up -d ) >/dev/null 2>&1 || die "docker compose a échoué."
