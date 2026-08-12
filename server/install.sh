@@ -292,8 +292,10 @@ mv "$TARGET/exclude.txt.new" "$TARGET/exclude.txt"
 
 # ─── Manifestes de départ ────────────────────────────────────────────────────
 
+# Un garde PAR FICHIER : tester config.json pour decider des trois laissait
+# /instances en 404 des qu'on ne regenerait que celui-la.
 if [ -f "$TARGET/www/config.json" ]; then
-    note "manifestes existants, conservés"
+    note "config.json existant, conservé"
 else
 cat > "$TARGET/www/config.json" <<CONFIGJSON
 {
@@ -307,6 +309,8 @@ cat > "$TARGET/www/config.json" <<CONFIGJSON
   "rss": ""
 }
 CONFIGJSON
+note "config.json écrit"
+fi
 
 python3 - "$TARGET" "$PUBLIC_URL" "$INSTANCE" <<'PYINST'
 import json, sys
@@ -344,16 +348,28 @@ instances = {
         "status": {"nameServer": inst, "ip": "play.enderhost.info", "port": 25565},
     }
 }
-open(f"{target}/www/instances.json", "w", encoding="utf-8").write(
-    json.dumps(instances, indent=2, ensure_ascii=False) + "\n")
-open(f"{target}/www/articles.json", "w", encoding="utf-8").write(
-    json.dumps([{"title": "Saison 1", "content":
-                 "Le pack EnderCraft est en place. Bon jeu !",
-                 "author": "EnderCraft", "publish_date": "2026-01-01"}],
-               indent=2, ensure_ascii=False) + "\n")
+import os
+
+def write_if_absent(path, data):
+    """Ne touche jamais a un manifeste existant : il porte vos reglages."""
+    if os.path.exists(path):
+        return False
+    open(path, "w", encoding="utf-8").write(
+        json.dumps(data, indent=2, ensure_ascii=False) + chr(10))
+    return True
+
+wrote = []
+if write_if_absent(f"{target}/www/instances.json", instances):
+    wrote.append("instances.json")
+if write_if_absent(f"{target}/www/articles.json",
+                   [{"title": "Saison 1",
+                     "content": "Le pack EnderCraft est en place. Bon jeu !",
+                     "author": "EnderCraft", "publish_date": "2026-01-01"}]):
+    wrote.append("articles.json")
+print("    " + (", ".join(wrote) + " ecrits" if wrote
+                else "instances.json et articles.json existants, conserves"))
 PYINST
-note "config.json, instances.json et articles.json écrits"
-fi
+note "instances.json et articles.json : écrits s'ils manquaient"
 
 step "Démarrage"
 ( cd "$TARGET" && docker compose up -d ) >/dev/null 2>&1 || die "docker compose a échoué."
