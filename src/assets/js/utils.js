@@ -97,8 +97,25 @@ async function setStatus(opt) {
 
     let { ip, port, nameServer } = opt
     nameServerElement.innerHTML = nameServer
+
+    // Tant qu'on ne sait pas, on ne prétend pas : rouge par défaut, et le texte
+    // dit ce qui se passe. Le HTML livrait « operationeel - 0 ms » en dur, donc
+    // un serveur jamais joignable s'affichait comme opérationnel.
+    statusServerElement.classList.add('red')
+    document.querySelector('.status-player-count').classList.add('red')
+    statusServerElement.innerHTML = `Vérification...`
+
     let status = new Status(ip, port);
-    let statusServer = await status.getStatus().then(res => res).catch(err => err);
+    // getStatus() peut ne JAMAIS se régler. Si l'hôte accepte la connexion puis
+    // la ferme sans rien répondre — le cas d'un proxy TCPShield dont le serveur
+    // de jeu est éteint — aucun 'error' n'est émis, et le socket.setTimeout de
+    // minecraft-java-core est annulé à la fermeture : son callback ne part pas.
+    // Sans cette course, l'await ne rendrait jamais la main et aucune des deux
+    // branches ci-dessous ne s'exécuterait.
+    let statusServer = await Promise.race([
+        status.getStatus().then(res => res).catch(err => err),
+        new Promise(resolve => setTimeout(() => resolve({ error: 'timeout' }), 5000))
+    ]);
 
     if (!statusServer.error) {
         statusServerElement.classList.remove('red')
