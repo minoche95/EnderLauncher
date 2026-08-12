@@ -8,6 +8,7 @@
 #   ./install.sh --port 8080              port d'écoute (défaut 8087)
 #   ./install.sh --public                 exposer sur toutes les interfaces
 #   ./install.sh --no-panel               sans le panneau de gestion
+#   ./install.sh --panel-bind 0.0.0.0     panneau joignable sur le reseau local
 #   ./install.sh --ref <commit>           version des fichiers du panneau
 #   ./install.sh --url https://index...   URL publique, écrite dans les manifestes
 #
@@ -28,6 +29,7 @@ INSTANCE="EnderCraft"
 BIND="127.0.0.1:"   # derrière un tunnel, rien n'a besoin d'être exposé
 PANEL=1
 PANEL_PORT=8088
+PANEL_BIND="127.0.0.1"
 REF="master"
 RAW="https://raw.githubusercontent.com/minoche95/EnderLauncher"
 
@@ -44,6 +46,7 @@ while [ $# -gt 0 ]; do
         --public)   BIND=""; shift ;;
         --no-panel) PANEL=0; shift ;;
         --panel-port) PANEL_PORT="${2:?--panel-port attend un numéro}"; shift 2 ;;
+        --panel-bind) PANEL_BIND="${2:?--panel-bind attend une adresse}"; shift 2 ;;
         --ref)      REF="${2:?--ref attend une référence git}"; shift 2 ;;
         -h|--help)  sed -n '2,15p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *)          die "option inconnue : $1" ;;
@@ -160,7 +163,7 @@ Type=simple
 WorkingDirectory=$TARGET
 Environment=ENDERINDEX_ROOT=$TARGET
 Environment=PANEL_PORT=$PANEL_PORT
-Environment=PANEL_BIND=127.0.0.1
+Environment=PANEL_BIND=$PANEL_BIND
 ExecStart=$(command -v python3) $TARGET/panel.py
 Restart=on-failure
 RestartSec=5
@@ -175,6 +178,10 @@ UNITFILE
         loginctl enable-linger "$USER" >/dev/null 2>&1             && note "lingering activé — le panneau survit à la déconnexion"             || note "lingering refusé : sudo loginctl enable-linger $USER"
     else
         note "systemd utilisateur indisponible — lancez : python3 $TARGET/panel.py"
+    fi
+    if [ "$PANEL_BIND" != "127.0.0.1" ]; then
+        note "écoute sur $PANEL_BIND — aucune authentification, à réserver"
+        note "à un réseau de confiance et à ne jamais exposer sur internet"
     fi
 fi
 
